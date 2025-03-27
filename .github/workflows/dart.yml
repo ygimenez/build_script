@@ -40,6 +40,17 @@ jobs:
         with:
           file: pubspec.yaml
 
+      - name: Create release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          tag: ${{ steps.read_yaml.outputs['version'] }}
+        run: |
+          gh release create "$tag" \
+              --repo="$GITHUB_REPOSITORY" \
+              --title="${GITHUB_REPOSITORY#*/} ${tag#v}" \
+              --generate-notes \
+              build/*
+
       - name: Generate release
         uses: nekofar/create-github-release@v1.0.12
         with:
