@@ -8,27 +8,38 @@ class ConsoleColor {
   String toString() => '\x1B[${code}m$content\x1B[0m';
 }
 
+class Default extends ConsoleColor {
+  Default(content) : super(0, content.toString());
+}
+
 class Black extends ConsoleColor {
-  Black(String content) : super(30, content);
+  Black(content) : super(30, content.toString());
 }
+
 class Red extends ConsoleColor {
-  Red(String content) : super(31, content);
+  Red(content) : super(31, content.toString());
 }
+
 class Green extends ConsoleColor {
-  Green(String content) : super(32, content);
+  Green(content) : super(32, content.toString());
 }
+
 class Yellow extends ConsoleColor {
-  Yellow(String content) : super(33, content);
+  Yellow(content) : super(33, content.toString());
 }
+
 class Blue extends ConsoleColor {
-  Blue(String content) : super(34, content);
+  Blue(content) : super(34, content.toString());
 }
+
 class Magenta extends ConsoleColor {
-  Magenta(String content) : super(35, content);
+  Magenta(content) : super(35, content.toString());
 }
+
 class Cyan extends ConsoleColor {
-  Cyan(String content) : super(36, content);
+  Cyan(content) : super(36, content.toString());
 }
+
 class White extends ConsoleColor {
-  White(String content) : super(37, content);
+  White(content) : super(37, content.toString());
 }
