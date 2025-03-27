@@ -1,20 +1,16 @@
 import 'dart:io';
 
+import 'package:crypto/crypto.dart';
 import 'package:http/http.dart' as http;
 
 import 'console_color.dart';
 
 const version = 'DEV';
 const repository = 'https://github.com/ygimenez/build_script';
+const isRelease = version != 'DEV';
 final cli = http.Client();
 
 void main(List<String> args) async {
-  final old = File('${Platform.script.path}.old');
-  if (await old.exists()) {
-    info('Deleted old version');
-    await old.delete();
-  }
-
   info('BuildScript Version $version');
 
   info('Fetching latest version...');
@@ -25,22 +21,29 @@ void main(List<String> args) async {
 
     if (version != latest) {
       File exe = File.fromUri(Platform.script);
-      await exe.rename('${exe.path}.old');
+      if (isRelease) {
+        await exe.rename('${exe.path}.old');
+      }
 
-      final res = await http.get(Uri.parse('$repository/releases/download/$latest/build_script.exe'));
-      exe = await File(exe.path).writeAsBytes(res.bodyBytes, flush: true);
-
-      await Process.start('Start-Process', ['-FilePath', exe.path]);
-      // exit(0);
+      final resExe = await http.get(Uri.parse('$repository/releases/download/$latest/build_script.exe'));
+      final hash = md5.convert(resExe.bodyBytes).toString().toUpperCase();
+      {
+        final resHash = await http.get(Uri.parse('$repository/releases/download/$latest/checksum.md5'));
+        if (hash == resHash.body) {
+          if (isRelease) {
+            exe = await File(exe.path).writeAsBytes(resExe.bodyBytes, flush: true);
+            await Process.start('del ${exe.path}.old && start ${exe.path}', [], runInShell: true);
+            exit(0);
+          }
+        }
+      }
     }
   } else {
 
   }
 
-  info('Continue');
   // exec('git', [''], 'Git.Git');
-  // exit(0);
-  await Future.delayed(Duration(seconds: 10));
+  exit(0);
 }
 
 bool exec(String program, [List<String> args = const [], String? wingetId]) {
