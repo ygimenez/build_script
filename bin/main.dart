@@ -29,7 +29,7 @@ void main(List<String> args) async {
       final res = await http.get(Uri.parse('$repository/releases/download/$latest/build_script.exe'));
       exe = await File(exe.path).writeAsBytes(res.bodyBytes, flush: true);
 
-      await Process.start(exe.path, args, mode: ProcessStartMode.inheritStdio);
+      Process.start('Start-Process', [exe.path, '-ArgumentsList "${args.join(" ")}"']);
       exit(0);
     }
   } else {
