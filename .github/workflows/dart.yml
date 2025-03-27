@@ -19,6 +19,13 @@ jobs:
       - name: Make build directory
         run: mkdir build
 
+      - name: Replace version
+        uses: richardrigutins/replace-in-files@v2
+        with:
+          files: 'pubspec.yaml'
+          search-text: 'version: 0.0.0'
+          replacement-text: 'version: ${{ github.ref_name }}'
+
       - name: Build executable
         run: dart compile exe bin/main.dart -o build/build_script.exe
 
