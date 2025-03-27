@@ -34,31 +34,15 @@ jobs:
             build/build_script.exe
             build/checksum.md5
 
-      - name: Extract version
-        id: extract_version
-        run: |
-          version=$(grep '^version: ' pubspec.yaml | cut -d ' ' -f 2 | tr -d '\r')
-          echo "VERSION=$version" >> $GITHUB_ENV
-
-      - name: Check tag
-        id: check_tag
-        run: |
-          if git rev-parse "v${{ env.VERSION }}" >/dev/null 2>&1; then
-            echo "TAG_EXISTS=true" >> $GITHUB_ENV
-          else
-            echo "TAG_EXISTS=false" >> $GITHUB_ENV
-          fi
-
-      - name: Modify tag
-        if: env.TAG_EXISTS == 'true'
-        id: modify_tag
-        run: |
-          new_version="${{ env.VERSION }}-build-${{ github.run_number }}"
-          echo "VERSION=$new_version" >> $GITHUB_ENV
+      - name: read-yaml-file
+        uses: pietrobolcato/action-read-yaml@1.0.0
+        id: read_action
+        with:
+          config: pubspec.yaml
 
       - name: Create release
         uses: ncipollo/release-action@v1
         with:
           artifacts: "build/build_script.exe,build/checksum.md5"
-          tag: v${{ env.VERSION }}
+          tag: v${{ steps.read_action.outputs['version'] }}
           token: ${{ secrets.TOKEN }}
