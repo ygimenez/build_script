@@ -9,6 +9,11 @@ const repository = 'https://github.com/ygimenez/build_script';
 final cli = http.Client();
 
 void main(List<String> args) async {
+  final old = File('${Platform.script.path}.old');
+  if (await old.exists()) {
+    await old.delete();
+  }
+
   info('BuildScript Version $version');
 
   info('Fetching latest version...');
@@ -31,6 +36,7 @@ void main(List<String> args) async {
 
   }
 
+  info('Continue');
   // exec('git', [''], 'Git.Git');
   exit(0);
 }
