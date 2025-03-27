@@ -33,16 +33,10 @@ jobs:
             build/build_script.exe
             build/checksum.md5
 
-      - name: Parse pubspec
-        uses: martinhaintz/ga-yaml-parser@v0.1.2
-        id: read_yaml
-        with:
-          file: pubspec.yaml
-
       - name: Create release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          tag: ${{ steps.read_yaml.outputs['version'] }}
+          tag: ${{ github.ref_name }}
         run: |
           gh release create ${{ env.tag }} `
             --repo="$GITHUB_REPOSITORY" `
