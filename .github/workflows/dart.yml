@@ -1,0 +1,67 @@
+name: Dart
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dart-lang/setup-dart@9a04e6d73cca37bd455e0608d7e5092f881fd603
+
+      - name: Install dependencies
+        run: dart pub get
+
+      - name: Make build directory
+        run: mkdir build
+
+      - name: Build executable
+        run: dart compile exe bin/main.dart -o build/build_script.exe
+
+      - name: Generate hashes
+        uses: MCJack123/ghaction-Generate-Release-Hashes@v4
+        with:
+          hash-type: md5
+          file-name: build/checksum.md5
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4.6.2
+        with:
+          name: Releases
+          path: |
+            build/build_script.exe
+            build/checksum.md5
+
+      - name: Extract version
+        id: extract_version
+        run: |
+          version=$(grep '^version: ' pubspec.yaml | cut -d ' ' -f 2 | tr -d '\r')
+          echo "VERSION=$version" >> $GITHUB_ENV
+
+      - name: Check tag
+        id: check_tag
+        run: |
+          if git rev-parse "v${{ env.VERSION }}" >/dev/null 2>&1; then
+            echo "TAG_EXISTS=true" >> $GITHUB_ENV
+          else
+            echo "TAG_EXISTS=false" >> $GITHUB_ENV
+          fi
+
+      - name: Modify tag
+        if: env.TAG_EXISTS == 'true'
+        id: modify_tag
+        run: |
+          new_version="${{ env.VERSION }}-build-${{ github.run_number }}"
+          echo "VERSION=$new_version" >> $GITHUB_ENV
+
+      - name: Create release
+        uses: ncipollo/release-action@v1
+        with:
+          artifacts: "build/build_script.exe,build/checksum.md5"
+          tag: v${{ env.VERSION }}
+          token: ${{ secrets.TOKEN }}
