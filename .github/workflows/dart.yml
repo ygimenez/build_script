@@ -45,13 +45,4 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ steps.read_yaml.outputs['version'] }}
         run: |
-          gh release create "$tag" --repo="$GITHUB_REPOSITORY" --title="${GITHUB_REPOSITORY#*/} ${tag#v}" --generate-notes build/*
-
-      - name: Generate release
-        uses: nekofar/create-github-release@v1.0.12
-        with:
-          latest: true
-          tag: ${{ steps.read_yaml.outputs['version'] }}
-          files: |
-            build/build_script.exe
-            build/checksum.md5
+          gh release create "$tag" --repo="$GITHUB_REPOSITORY" --title="${GITHUB_REPOSITORY#*/} ${{ env.tag }} --generate-notes build/*
