@@ -34,11 +34,10 @@ jobs:
             build/build_script.exe
             build/checksum.md5
 
-      - name: read-yaml-file
-        uses: pietrobolcato/action-read-yaml@1.1.0
-        id: read_action
+      - name: Parse pubspec
+        uses: martinhaintz/ga-yaml-parser@v0.1.2
         with:
-          config: pubspec.yaml
+          file: pubspec.yaml
 
       - name: Create release
         uses: ncipollo/release-action@v1
