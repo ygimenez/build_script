@@ -40,13 +40,11 @@ jobs:
         with:
           file: pubspec.yaml
 
-      - name: Release with Notes
-        uses: phuonghuynh/action-ghrelease@v1.1.0
+      - name: Generate release
+        uses: nekofar/create-github-release@v1.0.12
         with:
+          latest: true
           tag_name: ${{ steps.read_yaml.outputs['version'] }}
           files: |
             build/build_script.exe
             build/checksum.md5
-          fail_on_unmatched_files: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
