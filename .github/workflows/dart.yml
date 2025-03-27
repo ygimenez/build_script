@@ -32,14 +32,6 @@ jobs:
       - name: Generate hash
         run: Get-FileHash -Algorithm MD5 build/build_script.exe | Select -ExpandProperty Hash > build/checksum.md5
 
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v4.6.2
-        with:
-          name: Releases
-          path: |
-            build/build_script.exe
-            build/checksum.md5
-
       - name: Create release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
