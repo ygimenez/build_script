@@ -11,6 +11,7 @@ final cli = http.Client();
 void main(List<String> args) async {
   final old = File('${Platform.script.path}.old');
   if (await old.exists()) {
+    info('Deleted old version');
     await old.delete();
   }
 
@@ -29,8 +30,8 @@ void main(List<String> args) async {
       final res = await http.get(Uri.parse('$repository/releases/download/$latest/build_script.exe'));
       exe = await File(exe.path).writeAsBytes(res.bodyBytes, flush: true);
 
-      Process.start('Start-Process', [exe.path, '-ArgumentsList "${args.join(" ")}"']);
-      exit(0);
+      await Process.start('Start-Process', ['-FilePath', exe.path]);
+      // exit(0);
     }
   } else {
 
@@ -38,7 +39,8 @@ void main(List<String> args) async {
 
   info('Continue');
   // exec('git', [''], 'Git.Git');
-  exit(0);
+  // exit(0);
+  await Future.delayed(Duration(seconds: 10));
 }
 
 bool exec(String program, [List<String> args = const [], String? wingetId]) {
