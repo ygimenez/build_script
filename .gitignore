@@ -5,3 +5,4 @@
 # Conventional directory for build output.
 build/
 bin/*.exe
+bin/*.exe.old
