@@ -39,9 +39,11 @@ jobs:
         with:
           file: pubspec.yaml
 
-      - name: Create release
-        uses: ncipollo/release-action@v1
+      - name: Release with Notes
+        uses: phuonghuynh/action-ghrelease@v1.1.0
         with:
-          artifacts: "build/build_script.exe,build/checksum.md5"
-          tag: v${{ steps.read_action.outputs['version'] }}
-          token: ${{ secrets.TOKEN }}
+          files: |
+            build/build_script.exe
+            build/checksum.md5
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
