@@ -35,7 +35,7 @@ jobs:
             build/checksum.md5
 
       - name: read-yaml-file
-        uses: pietrobolcato/action-read-yaml@1.0.0
+        uses: pietrobolcato/action-read-yaml@1.1.0
         id: read_action
         with:
           config: pubspec.yaml
