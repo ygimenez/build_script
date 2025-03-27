@@ -44,7 +44,7 @@ jobs:
         uses: nekofar/create-github-release@v1.0.12
         with:
           latest: true
-          tag_name: ${{ steps.read_yaml.outputs['version'] }}
+          tag: ${{ steps.read_yaml.outputs['version'] }}
           files: |
             build/build_script.exe
             build/checksum.md5
