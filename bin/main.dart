@@ -5,28 +5,36 @@ import 'package:http/http.dart' as http;
 import 'console_color.dart';
 import 'package:yaml/yaml.dart';
 
-const repository = 'https://github.com/ygimenez/Pagination-Utils/releases/latest';
+const repository = 'https://github.com/ygimenez/build_script';
 final cli = http.Client();
 
 void main(List<String> args) async {
-  final pubspec = loadYaml(File('pubspec.yaml').readAsStringSync());
-  final version = pubspec['version'];
+  final pubspec = loadYaml(await File('pubspec.yaml').readAsString());
+  final version = (pubspec['version'] == '0.0.0' ? 'DEV' : pubspec['version']);
   info('BuildScript Version $version');
 
   info('Fetching latest version...');
-  final res = await cli.send(http.Request('HEAD', Uri.parse(repository))..followRedirects = false);
+  final res = await cli.send(http.Request('HEAD', Uri.parse('$repository/releases/latest'))..followRedirects = false);
   if (res.headers.containsKey("location")) {
     final latest = res.headers["location"]!.split("/").last;
     info(latest, true);
 
     if (version != latest) {
+      File exe = File.fromUri(Platform.script);
+      await exe.rename('${exe.path}.old');
 
+      final res = await http.get(Uri.parse('$repository/releases/download/$latest/build_script.exe'));
+      exe = await File(exe.path).writeAsBytes(res.bodyBytes, flush: true);
+
+      await Process.start(exe.path, args, mode: ProcessStartMode.inheritStdio);
+      exit(0);
     }
   } else {
 
   }
 
   // exec('git', [''], 'Git.Git');
+  exit(0);
 }
 
 bool exec(String program, [List<String> args = const [], String? wingetId]) {
