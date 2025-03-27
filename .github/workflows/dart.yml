@@ -45,4 +45,4 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ steps.read_yaml.outputs['version'] }}
         run: |
-          gh release create ${{ env.tag }} --repo="$GITHUB_REPOSITORY" --title="${GITHUB_REPOSITORY#*/} ${{ env.tag }}" --generate-notes build/*
+          gh release create ${{ env.tag }} --repo="$GITHUB_REPOSITORY" --title="${GITHUB_REPOSITORY#*/} ${{ env.tag }}" --generate-notes --verify-tag build/*
