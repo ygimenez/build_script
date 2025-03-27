@@ -3,14 +3,12 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 
 import 'console_color.dart';
-import 'package:yaml/yaml.dart';
 
+const version = 'DEV';
 const repository = 'https://github.com/ygimenez/build_script';
 final cli = http.Client();
 
 void main(List<String> args) async {
-  final pubspec = loadYaml(await File('pubspec.yaml').readAsString());
-  final version = (pubspec['version'] == '0.0.0' ? 'DEV' : pubspec['version']);
   info('BuildScript Version $version');
 
   info('Fetching latest version...');
