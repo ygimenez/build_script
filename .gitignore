@@ -6,3 +6,6 @@
 build/
 bin/*.exe
 bin/*.exe.old
+
+# Added by build_script
+output/
