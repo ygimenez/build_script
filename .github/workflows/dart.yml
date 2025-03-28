@@ -23,7 +23,7 @@ jobs:
         uses: richardrigutins/replace-in-files@v2
         with:
           files: 'bin/main.dart'
-          search-text: "const version = 'DEV'"
+          search-text: "const kVersion = 'DEV'"
           replacement-text: "const version = '${{ github.ref_name }}'"
 
       - name: Build executable

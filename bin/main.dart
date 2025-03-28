@@ -9,12 +9,13 @@ import 'package:yaml/yaml.dart';
 import 'console_color.dart';
 import 'templates.dart';
 
-const version = 'DEV';
-const repository = 'https://github.com/ygimenez/build_script';
-const blobs = 'https://raw.githubusercontent.com/ygimenez/build_script/refs/heads/master';
-const isRelease = version != 'DEV';
-const chocoInstall =
+const kVersion = 'DEV';
+const kRepository = 'https://github.com/ygimenez/build_script';
+const kBlobs = 'https://raw.githubusercontent.com/ygimenez/build_script/refs/heads/master';
+const kIsRelease = kVersion != 'DEV';
+const kChocoInstall =
     "Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))";
+
 final cli = http.Client();
 
 void main(List<String> args) async {
@@ -27,26 +28,28 @@ void main(List<String> args) async {
 
     if (!isAdmin) {
       error('This program requires elevation');
-      exit(1);
+      throw "Not admin";
     }
 
-    final pubspec = File('pubspec.yaml');
-    if (await pubspec.exists()) {
-      final info = loadYaml(await pubspec.readAsString());
-      if (info['dependencies']?['flutter']?['sdk'] != 'flutter') {
-        error('Project is not a flutter project');
-        exit(1);
+    if (kIsRelease) {
+      final pubspec = File('pubspec.yaml');
+      if (await pubspec.exists()) {
+        final info = loadYaml(await pubspec.readAsString());
+        if (info['dependencies']?['flutter']?['sdk'] != 'flutter') {
+          error('Project is not a flutter project');
+          throw "Not a flutter project";
+        }
+      } else {
+        error('Pubspec not found, this program must be placed at project root');
+        throw "Wrong root";
       }
-    } else {
-      error('Pubspec not found, this program must be placed at project root');
-      exit(1);
     }
 
     if (args.isEmpty) {
       info('App name: ');
-      final appname = stdin.readLineSync()?.replaceAll(' ', '').trim();
+      final appName = stdin.readLineSync()?.replaceAll(' ', '').trim();
 
-      if (appname == null) {
+      if (appName == null) {
         error('An app name is required');
         info(
           '''
@@ -56,43 +59,45 @@ void main(List<String> args) async {
               .replaceAll(RegExp(r'^\s+', multiLine: true), ''),
         );
 
-        exit(1);
+        throw "No app name";
       }
 
-      args = [appname];
+      args = [appName];
     }
 
-    info('BuildScript Version $version');
+    info('BuildScript Version $kVersion');
 
     info('---------------------------------------------------');
 
     info('Checking for updates...');
-    final res = await cli.send(http.Request('HEAD', Uri.parse('$repository/releases/latest'))..followRedirects = false);
+    final res = await cli.send(http.Request('HEAD', Uri.parse('$kRepository/releases/latest'))..followRedirects = false);
     if (res.headers.containsKey('location')) {
       final latest = res.headers['location']!.split('/').last;
 
-      if (version != latest) {
+      if (kVersion != latest) {
         info('available', true);
 
         File exe = File.fromUri(Platform.script);
-        if (isRelease) {
+        if (kIsRelease) {
           await exe.rename('${exe.path}.old');
         }
 
         info('Downloading new version');
-        final resExe = await http.get(Uri.parse('$repository/releases/download/$latest/build_script.exe'));
+        final resExe = await http.get(Uri.parse('$kRepository/releases/download/$latest/build_script.exe'));
         info(Green('Download complete'));
 
         final hash = md5.convert(resExe.bodyBytes).toString().toUpperCase();
         {
-          final resHash = await http.get(Uri.parse('$repository/releases/download/$latest/checksum.md5'));
+          final resHash = await http.get(Uri.parse('$kRepository/releases/download/$latest/checksum.md5'));
           if (hash == resHash.body.trim()) {
-            if (isRelease) {
+            if (kIsRelease) {
               info('Restarting program...');
               exe = await File(exe.path).writeAsBytes(resExe.bodyBytes, flush: true);
               await Process.start('del ${exe.path}.old && start "" "${exe.path}"', args, runInShell: true);
-              exit(0);
+              return;
             }
+
+            print('del ${exe.path}.old && start "" "${exe.path}"');
           } else {
             warn('Checksum mismatch, aborting update');
           }
@@ -108,7 +113,7 @@ void main(List<String> args) async {
 
     info('Checking dependencies');
     final deps = {
-      'Chocolatey': () async => await exec('choco', args: ['--version'], installScript: chocoInstall, writeOutput: false),
+      'Chocolatey': () async => await exec('choco', args: ['--version'], installScript: kChocoInstall, writeOutput: false),
       'Dart SDK': () async => await exec('dart', args: ['--version'], packageId: 'dart-sdk', writeOutput: false),
       'Flutter SDK': () async => await exec('flutter', args: ['--version'], packageId: 'flutter', writeOutput: false),
       'Inno Setup': () async => await exec('iscc', args: ['/?'], path: r'C:\Program Files (x86)\Inno Setup 6\', packageId: 'innosetup', writeOutput: false),
@@ -162,7 +167,7 @@ void main(List<String> args) async {
 
         final props = {
           'TITLE': nameParts.join(' '),
-          'VERSION': version,
+          'VERSION': kVersion,
           'EXENAME': nameParts.join(' ').toLowerCase(),
           'GUID': uuid.v5(Namespace.url.value, 'bels.com.br/$appName'),
           'NAME': appName,
@@ -180,13 +185,13 @@ void main(List<String> args) async {
       final icon = File('asset/installer.ico');
       if (!await icon.exists()) {
         warn('Installer icon not found, using fallback icon (path: ./asset/installer.ico)');
-        final res = await http.get(Uri.parse('$blobs/fallback/installer.ico'));
+        final res = await http.get(Uri.parse('$kBlobs/fallback/installer.ico'));
         await icon.writeAsBytes(res.bodyBytes);
       }
 
       await exec('flutter', args: ['build', 'windows']) &&
           await exec('iscc', args: ['Installer.iss'], path: r'C:\Program Files (x86)\Inno Setup 6\') &&
-          await exec('rar', args: ['a', '-ep1', join(output.path, 'Windows_${appName}_$version.rar'), join(output.path, '${appName}_setup.exe')], path: r'C:\Program Files\WinRAR\');
+          await exec('rar', args: ['a', '-ep1', join(output.path, 'Windows_${appName}_$kVersion.rar'), join(output.path, '${appName}_setup.exe')], path: r'C:\Program Files\WinRAR\');
     }
 
     if (await Directory('./android').exists()) {
@@ -197,7 +202,7 @@ void main(List<String> args) async {
         final apk = File('build/app/outputs/flutter-apk/app-release.apk');
         if (await apk.exists()) {
           await apk.rename('$appName.apk');
-          await exec('rar', args: ['a', '-ep1', join(output.path, 'Android_${appName}_$version.rar'), apk.path], path: r'C:\Program Files\WinRAR\');
+          await exec('rar', args: ['a', '-ep1', join(output.path, 'Android_${appName}_$kVersion.rar'), apk.path], path: r'C:\Program Files\WinRAR\');
         }
       }
     }
@@ -213,14 +218,15 @@ void main(List<String> args) async {
       final dir = Directory('build/web');
       if (await dir.exists()) {
         await exec('flutter', args: ['build', 'web']) &&
-            await exec('rar', args: ['a', '-r', '-ep1', join(output.path, 'Web_${appName}_$version.rar'), join(dir.path, '*')], path: r'C:\Program Files\WinRAR\');
+            await exec('rar', args: ['a', '-r', '-ep1', join(output.path, 'Web_${appName}_$kVersion.rar'), join(dir.path, '*')], path: r'C:\Program Files\WinRAR\');
       }
     }
-
-    exit(0);
+  } on Exception {
+    exit(1);
   } finally {
-    info('Press any key to exit...');
+    info('\nPress any key to exit...');
     stdin.readLineSync();
+    exit(0);
   }
 }
 
@@ -247,7 +253,7 @@ Future<bool> exec(String program, {String path = '', List<String> args = const [
 
       if (!installed) {
         error("Failed to install dependency '$program', aborting execution");
-        exit(1);
+        throw "Failed to install dependency";
       } else {
         info("Installed '$program' successfully");
         return exec(program, path: path, args: args, packageId: packageId, installScript: installScript, writeOutput: writeOutput);
@@ -255,7 +261,7 @@ Future<bool> exec(String program, {String path = '', List<String> args = const [
     }
 
     error("Process '$program' not found, please install before proceeding");
-    exit(1);
+    throw "Dependency unmet";
   }
 }
 
