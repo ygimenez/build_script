@@ -58,7 +58,7 @@ void main(List<String> args) async {
       exit(1);
     }
 
-    args.add(appname);
+    args = [appname];
   }
 
   info('BuildScript Version $version');
