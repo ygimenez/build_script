@@ -77,7 +77,8 @@ void main(List<String> args) async {
       if (kVersion != latest) {
         info('available', true);
 
-        File exe = File.fromUri(Platform.script);
+        final path = Platform.script.path;
+        File exe = File(path);
         if (kIsRelease) {
           await exe.rename('${exe.path}.old');
         }
@@ -92,12 +93,10 @@ void main(List<String> args) async {
           if (hash == resHash.body.trim()) {
             if (kIsRelease) {
               info('Restarting program...');
-              exe = await File(exe.path).writeAsBytes(resExe.bodyBytes, flush: true);
-              await Process.start('del ${exe.path}.old && start "" "${exe.path}"', args, runInShell: true);
-              return;
+              exe = await File(path).writeAsBytes(resExe.bodyBytes, flush: true);
+              await Process.start('del $path.old && start "" "$path"', args, runInShell: true);
+              exit(0);
             }
-
-            print('del ${exe.path}.old && start "" "${exe.path}"');
           } else {
             warn('Checksum mismatch, aborting update');
           }
@@ -191,7 +190,7 @@ void main(List<String> args) async {
 
       await exec('flutter', args: ['build', 'windows']) &&
           await exec('iscc', args: ['Installer.iss'], path: r'C:\Program Files (x86)\Inno Setup 6\') &&
-          await exec('rar', args: ['a', '-ep1', join(output.path, 'Windows_${appName}_$kVersion.rar'), join(output.path, '${appName}_setup.exe')], path: r'C:\Program Files\WinRAR\');
+          await exec('rar', args: ['a', '-df', '-ep1', join(output.path, 'Windows_${appName}_$kVersion.rar'), join(output.path, '${appName}_setup.exe')], path: r'C:\Program Files\WinRAR\');
     }
 
     if (await Directory('./android').exists()) {
