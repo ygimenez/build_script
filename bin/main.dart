@@ -125,10 +125,15 @@ void main(List<String> args) async {
   if (await gitignore.exists()) {
     final lines = await gitignore.readAsLines();
     if (!lines.any((l) => l == '# Added by build_script')) {
-      lines.addAll(['', '# Added by build_script', 'output/']);
+      lines.addAll([
+        '',
+        '# Added by build_script',
+        'output/',
+        './*.iss',
+      ]);
 
       await gitignore.writeAsString(lines.join('\n'));
-      info('Output directory added to .gitignore');
+      info('Added paths to .gitignore');
     }
   }
 
