@@ -198,9 +198,9 @@ void main(List<String> args) async {
 
       final built = await exec('flutter', args: ['build', 'apk']);
       if (built) {
-        final apk = File('build/app/outputs/flutter-apk/app-release.apk');
+        File apk = File('build/app/outputs/flutter-apk/app-release.apk');
         if (await apk.exists()) {
-          await apk.rename('$appName.apk');
+          apk = await apk.rename('$appName.apk');
           await exec('rar', args: ['a', '-ep1', join(output.path, 'Android_${appName}_$kVersion.rar'), apk.path], path: r'C:\Program Files\WinRAR\');
         }
       }
