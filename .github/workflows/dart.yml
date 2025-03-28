@@ -24,7 +24,7 @@ jobs:
         with:
           files: 'bin/main.dart'
           search-text: "const kVersion = 'DEV'"
-          replacement-text: "const version = '${{ github.ref_name }}'"
+          replacement-text: "const kVersion = '${{ github.ref_name }}'"
 
       - name: Build executable
         run: dart compile exe bin/main.dart -o build/build_script.exe
