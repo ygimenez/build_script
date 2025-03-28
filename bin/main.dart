@@ -13,7 +13,8 @@ const version = 'DEV';
 const repository = 'https://github.com/ygimenez/build_script';
 const blobs = 'https://raw.githubusercontent.com/ygimenez/build_script/refs/heads/master';
 const isRelease = version != 'DEV';
-const chocoInstall = "Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))";
+const chocoInstall =
+    "Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))";
 final cli = http.Client();
 
 void main(List<String> args) async {
@@ -41,18 +42,28 @@ void main(List<String> args) async {
   }
 
   if (args.isEmpty) {
-    error('An app name is required');
-    info('''
-    Usage:
-    - ${Platform.script.pathSegments.last} ${Green('[App name]')}
-    '''
-        .replaceAll(RegExp(r'^\s+', multiLine: true), ''));
-    exit(1);
+    info('App name: ');
+    final appname = stdin.readLineSync()?.replaceAll(' ', '').trim();
+
+    if (appname == null) {
+      error('An app name is required');
+      info(
+        '''
+        Usage:
+        - ${Platform.script.pathSegments.last} ${Green('[App name]')}
+        '''
+            .replaceAll(RegExp(r'^\s+', multiLine: true), ''),
+      );
+
+      exit(1);
+    }
+
+    args.add(appname);
   }
 
   info('BuildScript Version $version');
 
-  info('------------------------------------------');
+  info('---------------------------------------------------');
 
   info('Checking for updates...');
   final res = await cli.send(http.Request('HEAD', Uri.parse('$repository/releases/latest'))..followRedirects = false);
@@ -91,7 +102,7 @@ void main(List<String> args) async {
     warn('Unable to retrieve latest version');
   }
 
-  info('------------------------------------------');
+  info('---------------------------------------------------');
 
   info('Checking dependencies');
   final deps = {
@@ -108,7 +119,7 @@ void main(List<String> args) async {
     info(Cyan('OK'), true);
   }
 
-  info('------------------------------------------');
+  info('---------------------------------------------------');
 
   final gitignore = File('.gitignore');
   if (await gitignore.exists()) {
@@ -126,17 +137,19 @@ void main(List<String> args) async {
   final output = Directory('./output');
   if (!await output.exists()) {
     await output.create();
+  } else {
+    await for (final f in output.list()) {
+      await f.delete();
+    }
   }
 
   final appName = args.first;
   if (await Directory('./windows').exists()) {
     info('--------------------- WINDOWS ---------------------');
-    info('--------------------- ANDROID ---------------------');
-    info('---------------------  LINUX  ---------------------');
-    info('---------------------   WEB   ---------------------');
 
-    final installer = File('Installer.iss');
-    if (!await installer.exists()) {
+    /* Remake Installer */
+    {
+      final installer = File('Installer.iss');
       final nameParts = appName.split(RegExp(r'(?<=.)(?=[A-Z][a-z])'));
       final uuid = Uuid();
 
@@ -151,8 +164,9 @@ void main(List<String> args) async {
       await installer.writeAsString(kInstaller.replaceAllMapped(RegExp(r'{{(\w+)}}'), (match) => props[match[1]] ?? ""));
     }
 
-    final codeDeps = File('CodeDependencies.iss');
-    if (!await codeDeps.exists()) {
+    /* Remake CodeDependencies */
+    {
+      final codeDeps = File('CodeDependencies.iss');
       await codeDeps.writeAsString(kCodeDependencies);
     }
 
@@ -166,6 +180,34 @@ void main(List<String> args) async {
     await exec('flutter', args: ['build', 'windows']) &&
         await exec('iscc', args: ['Installer.iss'], path: r'C:\Program Files (x86)\Inno Setup 6\') &&
         await exec('rar', args: ['a', '-ep1', join(output.path, 'Windows_${appName}_$version.rar'), join(output.path, '${appName}_setup.exe')], path: r'C:\Program Files\WinRAR\');
+  }
+
+  if (await Directory('./android').exists()) {
+    info('--------------------- ANDROID ---------------------');
+
+    final built = await exec('flutter', args: ['build', 'apk']);
+    if (built) {
+      final apk = File('build/app/outputs/flutter-apk/app-release.apk');
+      if (await apk.exists()) {
+        await apk.rename('$appName.apk');
+        await exec('rar', args: ['a', '-ep1', join(output.path, 'Android_${appName}_$version.rar'), apk.path], path: r'C:\Program Files\WinRAR\');
+      }
+    }
+  }
+
+  if (await Directory('./linux').exists()) {
+    info('---------------------  LINUX  ---------------------');
+    // NOT IMPLEMENTED
+  }
+
+  if (await Directory('./web').exists()) {
+    info('---------------------   WEB   ---------------------');
+
+    final dir = Directory('build/web');
+    if (await dir.exists()) {
+      await exec('flutter', args: ['build', 'web']) &&
+          await exec('rar', args: ['a', '-r', '-ep1', join(output.path, 'Web_${appName}_$version.rar'), join(dir.path, '*')], path: r'C:\Program Files\WinRAR\');
+    }
   }
 
   exit(0);
