@@ -218,7 +218,10 @@ void main(List<String> args) async {
             await exec('rar', args: ['a', '-r', '-ep1', join(output.path, 'Web_${appName}_$kVersion.rar'), join(dir.path, '*')], path: r'C:\Program Files\WinRAR\');
       }
     }
-  } on Exception {
+  } catch (e) {
+    error(e);
+    info('\nPress any key to exit...');
+    stdin.readLineSync();
     exit(1);
   } finally {
     info('\nPress any key to exit...');
