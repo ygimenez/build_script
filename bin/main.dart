@@ -17,6 +17,7 @@ const kChocoInstall =
     "Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))";
 
 final cli = http.Client();
+final exe = File(kIsRelease ? 'build_script.exe' : basename(Platform.script.path));
 
 void main(List<String> args) async {
   try {
@@ -76,9 +77,6 @@ void main(List<String> args) async {
 
       if (kVersion != latest) {
         info('available', true);
-
-        final path = Platform.script.path;
-        File exe = File(path);
         if (kIsRelease) {
           await exe.rename('${exe.path}.old');
         }
@@ -93,8 +91,8 @@ void main(List<String> args) async {
           if (hash == resHash.body.trim()) {
             if (kIsRelease) {
               info('Restarting program...');
-              exe = await File(path).writeAsBytes(resExe.bodyBytes, flush: true);
-              await Process.start('del $path.old && start "" "$path"', args, runInShell: true);
+              await exe.writeAsBytes(resExe.bodyBytes, flush: true);
+              await Process.start('del ${exe.path}.old && start "" "${exe.path}"', args, runInShell: true);
               exit(0);
             }
           } else {
