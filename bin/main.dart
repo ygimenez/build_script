@@ -109,7 +109,7 @@ void main(List<String> args) async {
             if (kIsRelease) {
               info('Restarting program...');
               await exe.writeAsBytes(resExe.bodyBytes, flush: true);
-              await Process.start('powershell', ['(del "${exe.path}.old") -and (start "${exe.path}" ${args.join(' ')})'], runInShell: true);
+              await Process.start('powershell', ['del "${exe.path}.old"; start "${exe.path}" ${args.join(' ')}'], runInShell: true);
               exit(0);
             }
           } else {
