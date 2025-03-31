@@ -87,7 +87,8 @@ void main(List<String> args) async {
     info('---------------------------------------------------');
 
     info('Checking for updates...');
-    final res = await cli.send(http.Request('HEAD', Uri.parse('$kRepository/releases/latest'))..followRedirects = false);
+    final res = await cli.send(http.Request('HEAD', Uri.parse('$kRepository/releases/latest'))
+      ..followRedirects = false);
     if (res.headers.containsKey('location')) {
       final latest = res.headers['location']!.split('/').last;
 
@@ -204,7 +205,8 @@ void main(List<String> args) async {
 
       await exec('flutter', args: ['build', 'windows']) &&
           await exec('iscc', args: ['Installer.iss'], path: r'C:\Program Files (x86)\Inno Setup 6\') &&
-          await exec('rar', args: ['a', '-df', '-ep1', join(output.path, 'Windows_${appName}_$kVersion.rar'), join(output.path, '${appName}_setup.exe')], path: r'C:\Program Files\WinRAR\');
+          await exec('rar',
+              args: ['a', '-df', '-ep1', join(output.path, 'Windows_${appName}_$kVersion.rar'), join(output.path, '${appName}_setup.exe')], path: r'C:\Program Files\WinRAR\');
     }
 
     if (await Directory('./android').exists()) {
@@ -228,10 +230,10 @@ void main(List<String> args) async {
     if (await Directory('./web').exists()) {
       info('---------------------   WEB   ---------------------');
 
-      final dir = Directory('build/web');
-      if (await dir.exists()) {
-        await exec('flutter', args: ['build', 'web']) &&
-            await exec('rar', args: ['a', '-r', '-ep1', join(output.path, 'Web_${appName}_$kVersion.rar'), join(dir.path, '*')], path: r'C:\Program Files\WinRAR\');
+      final built = await exec('flutter', args: ['build', 'web']);
+      if (built) {
+        final dir = Directory('build/web');
+        await exec('rar', args: ['a', '-r', '-ep1', join(output.path, 'Web_${appName}_$kVersion.rar'), join(dir.path, '*')], path: r'C:\Program Files\WinRAR\');
       }
     }
   } catch (e) {
@@ -262,7 +264,9 @@ Future<bool> exec(String program, {String path = '', List<String> args = const [
       if (packageId != null) {
         installed = await Process.start('choco', ['install', packageId, '-y'], mode: ProcessStartMode.inheritStdio).then((p) => p.exitCode) == 0;
       } else if (installScript != null) {
-        final prog = installScript.split(' ').first;
+        final prog = installScript
+            .split(' ')
+            .first;
         final args = installScript.replaceFirst(prog, '').trim();
         installed = await Process.start(prog, [args], mode: ProcessStartMode.inheritStdio).then((p) => p.exitCode) == 0;
       }
@@ -272,7 +276,11 @@ Future<bool> exec(String program, {String path = '', List<String> args = const [
         throw "Failed to install dependency";
       } else {
         info("Installed '$program' successfully");
-        return exec(program, path: path, args: args, packageId: packageId, installScript: installScript, writeOutput: writeOutput);
+        return exec(program, path: path,
+            args: args,
+            packageId: packageId,
+            installScript: installScript,
+            writeOutput: writeOutput);
       }
     }
 
