@@ -40,6 +40,11 @@ void main(List<String> args) async {
           error('Project is not a flutter project');
           throw "Not a flutter project";
         }
+
+        final appName = info['app_name'];
+        if (args.isEmpty && appName != null) {
+          args = [appName];
+        }
       } else {
         error('Pubspec not found, this program must be placed at project root');
         throw "Wrong root";
@@ -61,6 +66,16 @@ void main(List<String> args) async {
         );
 
         throw "No app name";
+      }
+
+      if (kIsRelease) {
+        final pubspec = File('pubspec.yaml');
+        final lines = await pubspec.readAsLines();
+        final nameIdx = lines.indexWhere((l) => l.startsWith('name:'));
+        lines.insert(nameIdx + 1, 'app_name: $appName');
+
+        await pubspec.writeAsString(lines.join('\n'));
+        info('App name parameter added to pubspec, future executions will read from there');
       }
 
       args = [appName];
