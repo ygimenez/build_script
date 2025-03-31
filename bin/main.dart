@@ -150,7 +150,7 @@ void main(List<String> args) async {
           '',
           '# Added by build_script',
           'output/',
-          './*.iss',
+          '/*.iss',
         ]);
 
         await gitignore.writeAsString(lines.join('\n'));
