@@ -44,6 +44,7 @@ void main(List<String> args) async {
         final appName = info['app_name'];
         if (args.isEmpty && appName != null) {
           args = [appName];
+          info('App name: $appName');
         }
       } else {
         error('Pubspec not found, this program must be placed at project root');
