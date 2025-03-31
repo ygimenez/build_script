@@ -35,13 +35,13 @@ void main(List<String> args) async {
     if (kIsRelease) {
       final pubspec = File('pubspec.yaml');
       if (await pubspec.exists()) {
-        final info = loadYaml(await pubspec.readAsString());
-        if (info['dependencies']?['flutter']?['sdk'] != 'flutter') {
+        final yaml = loadYaml(await pubspec.readAsString());
+        if (yaml['dependencies']?['flutter']?['sdk'] != 'flutter') {
           error('Project is not a flutter project');
           throw "Not a flutter project";
         }
 
-        final appName = info['app_name'];
+        final appName = yaml['app_name'];
         if (args.isEmpty && appName != null) {
           args = [appName];
           info('App name: $appName');
