@@ -104,7 +104,7 @@ begin
   Dependency.Parameters := Parameters;
   Dependency.Title := Title;
 
-  if FileExists(ExpandConstant('{tmp}{\}') + Filename) then begin
+  if FileExists(ExpandConstant('{tmp}{}') + Filename) then begin
     Dependency.URL := '';
   end else begin
     Dependency.URL := URL;
@@ -175,7 +175,7 @@ begin
 
         while True do begin
           ResultCode := 0;
-          if ShellExec('', ExpandConstant('{tmp}{\}') + Dependency_List[DependencyIndex].Filename, Dependency_List[DependencyIndex].Parameters, '', SW_SHOWNORMAL, ewWaitUntilTerminated, ResultCode) then begin
+          if ShellExec('', ExpandConstant('{tmp}{}') + Dependency_List[DependencyIndex].Filename, Dependency_List[DependencyIndex].Parameters, '', SW_SHOWNORMAL, ewWaitUntilTerminated, ResultCode) then begin
             if Dependency_List[DependencyIndex].RestartAfter then begin
               if DependencyIndex = DependencyCount - 1 then begin
                 Dependency_NeedRestart := True;
@@ -217,7 +217,7 @@ begin
         if WizardNoIcons then begin
           TempValue := TempValue + ' /NOICONS';
         end;
-        RegWriteStringValue(HKA, 'SOFTWARE\Microsoft\Windows\CurrentVersion\RunOnce', '{#SetupSetting("AppName")}', TempValue);
+        RegWriteStringValue(HKA, 'SOFTWAREMicrosoftWindowsCurrentVersionRunOnce', '{#SetupSetting("AppName")}', TempValue);
       end;
     end;
 
@@ -291,10 +291,10 @@ var
   ResultCode: Integer;
 begin
   // source code: https://github.com/dotnet/deployment-tools/tree/master/src/clickonce/native/projects/NetCoreCheck
-  if not FileExists(ExpandConstant('{tmp}{\}') + 'netcorecheck' + Dependency_ArchSuffix + '.exe') then begin
+  if not FileExists(ExpandConstant('{tmp}{}') + 'netcorecheck' + Dependency_ArchSuffix + '.exe') then begin
     ExtractTemporaryFile('netcorecheck' + Dependency_ArchSuffix + '.exe');
   end;
-  Result := ShellExec('', ExpandConstant('{tmp}{\}') + 'netcorecheck' + Dependency_ArchSuffix + '.exe', Version, '', SW_HIDE, ewWaitUntilTerminated, ResultCode) and (ResultCode = 0);
+  Result := ShellExec('', ExpandConstant('{tmp}{}') + 'netcorecheck' + Dependency_ArchSuffix + '.exe', Version, '', SW_HIDE, ewWaitUntilTerminated, ResultCode) and (ResultCode = 0);
 end;
 
 procedure Dependency_AddDotNet35;
@@ -601,7 +601,7 @@ var
   PackedVersion: Int64;
 begin
   // https://www.microsoft.com/en-us/download/details.aspx?id=30438
-  if not RegQueryStringValue(HKLM, 'SOFTWARE\Microsoft\Microsoft SQL Server\MSSQL10_50.MSSQLSERVER\MSSQLServer\CurrentVersion', 'CurrentVersion', Version) or not StrToVersion(Version, PackedVersion) or (ComparePackedVersion(PackedVersion, PackVersionComponents(10, 50, 4000, 0)) < 0) then begin
+  if not RegQueryStringValue(HKLM, 'SOFTWAREMicrosoftMicrosoft SQL ServerMSSQL10_50.MSSQLSERVERMSSQLServerCurrentVersion', 'CurrentVersion', Version) or not StrToVersion(Version, PackedVersion) or (ComparePackedVersion(PackedVersion, PackVersionComponents(10, 50, 4000, 0)) < 0) then begin
     Dependency_Add('sql2008express' + Dependency_ArchSuffix + '.exe',
       '/QS /IACCEPTSQLSERVERLICENSETERMS /ACTION=INSTALL /FEATURES=SQL /INSTANCENAME=MSSQLSERVER',
       'SQL Server 2008 R2 Service Pack 2 Express',
@@ -616,7 +616,7 @@ var
   PackedVersion: Int64;
 begin
   // https://www.microsoft.com/en-us/download/details.aspx?id=56042
-  if not RegQueryStringValue(HKLM, 'SOFTWARE\Microsoft\Microsoft SQL Server\MSSQL11.MSSQLSERVER\MSSQLServer\CurrentVersion', 'CurrentVersion', Version) or not StrToVersion(Version, PackedVersion) or (ComparePackedVersion(PackedVersion, PackVersionComponents(11, 0, 7001, 0)) < 0) then begin
+  if not RegQueryStringValue(HKLM, 'SOFTWAREMicrosoftMicrosoft SQL ServerMSSQL11.MSSQLSERVERMSSQLServerCurrentVersion', 'CurrentVersion', Version) or not StrToVersion(Version, PackedVersion) or (ComparePackedVersion(PackedVersion, PackVersionComponents(11, 0, 7001, 0)) < 0) then begin
     Dependency_Add('sql2012express' + Dependency_ArchSuffix + '.exe',
       '/QS /IACCEPTSQLSERVERLICENSETERMS /ACTION=INSTALL /FEATURES=SQL /INSTANCENAME=MSSQLSERVER',
       'SQL Server 2012 Service Pack 4 Express',
@@ -631,7 +631,7 @@ var
   PackedVersion: Int64;
 begin
   // https://www.microsoft.com/en-us/download/details.aspx?id=57473
-  if not RegQueryStringValue(HKLM, 'SOFTWARE\Microsoft\Microsoft SQL Server\MSSQL12.MSSQLSERVER\MSSQLServer\CurrentVersion', 'CurrentVersion', Version) or not StrToVersion(Version, PackedVersion) or (ComparePackedVersion(PackedVersion, PackVersionComponents(12, 0, 6024, 0)) < 0) then begin
+  if not RegQueryStringValue(HKLM, 'SOFTWAREMicrosoftMicrosoft SQL ServerMSSQL12.MSSQLSERVERMSSQLServerCurrentVersion', 'CurrentVersion', Version) or not StrToVersion(Version, PackedVersion) or (ComparePackedVersion(PackedVersion, PackVersionComponents(12, 0, 6024, 0)) < 0) then begin
     Dependency_Add('sql2014express' + Dependency_ArchSuffix + '.exe',
       '/QS /IACCEPTSQLSERVERLICENSETERMS /ACTION=INSTALL /FEATURES=SQL /INSTANCENAME=MSSQLSERVER',
       'SQL Server 2014 Service Pack 3 Express',
@@ -646,7 +646,7 @@ var
   PackedVersion: Int64;
 begin
   // https://www.microsoft.com/en-us/download/details.aspx?id=56840
-  if not RegQueryStringValue(HKLM, 'SOFTWARE\Microsoft\Microsoft SQL Server\MSSQL13.MSSQLSERVER\MSSQLServer\CurrentVersion', 'CurrentVersion', Version) or not StrToVersion(Version, PackedVersion) or (ComparePackedVersion(PackedVersion, PackVersionComponents(13, 0, 5026, 0)) < 0) then begin
+  if not RegQueryStringValue(HKLM, 'SOFTWAREMicrosoftMicrosoft SQL ServerMSSQL13.MSSQLSERVERMSSQLServerCurrentVersion', 'CurrentVersion', Version) or not StrToVersion(Version, PackedVersion) or (ComparePackedVersion(PackedVersion, PackVersionComponents(13, 0, 5026, 0)) < 0) then begin
     Dependency_Add('sql2016express' + Dependency_ArchSuffix + '.exe',
       '/QS /IACCEPTSQLSERVERLICENSETERMS /ACTION=INSTALL /FEATURES=SQL /INSTANCENAME=MSSQLSERVER',
       'SQL Server 2016 Service Pack 2 Express',
@@ -661,7 +661,7 @@ var
   PackedVersion: Int64;
 begin
   // https://www.microsoft.com/en-us/download/details.aspx?id=55994
-  if not RegQueryStringValue(HKLM, 'SOFTWARE\Microsoft\Microsoft SQL Server\MSSQL14.MSSQLSERVER\MSSQLServer\CurrentVersion', 'CurrentVersion', Version) or not StrToVersion(Version, PackedVersion) or (ComparePackedVersion(PackedVersion, PackVersionComponents(14, 0, 0, 0)) < 0) then begin
+  if not RegQueryStringValue(HKLM, 'SOFTWAREMicrosoftMicrosoft SQL ServerMSSQL14.MSSQLSERVERMSSQLServerCurrentVersion', 'CurrentVersion', Version) or not StrToVersion(Version, PackedVersion) or (ComparePackedVersion(PackedVersion, PackVersionComponents(14, 0, 0, 0)) < 0) then begin
     Dependency_Add('sql2017express' + Dependency_ArchSuffix + '.exe',
       '/QS /IACCEPTSQLSERVERLICENSETERMS /ACTION=INSTALL /FEATURES=SQL /INSTANCENAME=MSSQLSERVER',
       'SQL Server 2017 Express',
@@ -676,7 +676,7 @@ var
   PackedVersion: Int64;
 begin
   // https://www.microsoft.com/en-us/download/details.aspx?id=101064
-  if not RegQueryStringValue(HKLM, 'SOFTWARE\Microsoft\Microsoft SQL Server\MSSQL15.MSSQLSERVER\MSSQLServer\CurrentVersion', 'CurrentVersion', Version) or not StrToVersion(Version, PackedVersion) or (ComparePackedVersion(PackedVersion, PackVersionComponents(15, 0, 0, 0)) < 0) then begin
+  if not RegQueryStringValue(HKLM, 'SOFTWAREMicrosoftMicrosoft SQL ServerMSSQL15.MSSQLSERVERMSSQLServerCurrentVersion', 'CurrentVersion', Version) or not StrToVersion(Version, PackedVersion) or (ComparePackedVersion(PackedVersion, PackVersionComponents(15, 0, 0, 0)) < 0) then begin
     Dependency_Add('sql2019express' + Dependency_ArchSuffix + '.exe',
       '/QS /IACCEPTSQLSERVERLICENSETERMS /ACTION=INSTALL /FEATURES=SQL /INSTANCENAME=MSSQLSERVER',
       'SQL Server 2019 Express',
@@ -687,7 +687,7 @@ end;
 
 procedure Dependency_AddWebView2;
 begin
-  if not RegValueExists(HKLM, Dependency_String('SOFTWARE', 'SOFTWARE\WOW6432Node') + '\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}', 'pv') then begin
+  if not RegValueExists(HKLM, Dependency_String('SOFTWARE', 'SOFTWAREWOW6432Node') + 'MicrosoftEdgeUpdateClients{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}', 'pv') then begin
     Dependency_Add('MicrosoftEdgeWebview2Setup.exe',
       '/silent /install',
       'WebView2 Runtime',
@@ -765,8 +765,8 @@ AppSupportURL={#MyAppURL}
 AppUpdatesURL={#MyAppURL}
 OutputBaseFilename={#MyAppSetupName}-{#MyAppVersion}
 DefaultGroupName={#MyAppSetupName}
-DefaultDirName={autopf}\{#MyAppSetupName}
-UninstallDisplayIcon={app}\MyProgram.exe
+DefaultDirName={autopf}{#MyAppSetupName}
+UninstallDisplayIcon={app}MyProgram.exe
 SourceDir=src
 OutputDir={#SourcePath}\bin
 AllowNoIcons=yes
@@ -777,8 +777,8 @@ ArchitecturesInstallIn64BitMode=x64
 
 [Languages]
 Name: en; MessagesFile: "compiler:Default.isl"
-Name: nl; MessagesFile: "compiler:Languages\Dutch.isl"
-Name: de; MessagesFile: "compiler:Languages\German.isl"
+Name: nl; MessagesFile: "compiler:LanguagesDutch.isl"
+Name: de; MessagesFile: "compiler:LanguagesGerman.isl"
 
 [Files]
 #ifdef UseNetCoreCheck
@@ -796,15 +796,15 @@ Source: "MyProg-x64.exe"; DestDir: "{app}"; DestName: "MyProg.exe"; Check: Depen
 Source: "MyProg.exe"; DestDir: "{app}"; Check: not Dependency_IsX64; Flags: ignoreversion
 
 [Icons]
-Name: "{group}\{#MyAppSetupName}"; Filename: "{app}\MyProg.exe"
-Name: "{group}\{cm:UninstallProgram,{#MyAppSetupName}}"; Filename: "{uninstallexe}"
-Name: "{commondesktop}\{#MyAppSetupName}"; Filename: "{app}\MyProg.exe"; Tasks: desktopicon
+Name: "{group}{#MyAppSetupName}"; Filename: "{app}MyProg.exe"
+Name: "{group}{cm:UninstallProgram,{#MyAppSetupName}}"; Filename: "{uninstallexe}"
+Name: "{commondesktop}{#MyAppSetupName}"; Filename: "{app}MyProg.exe"; Tasks: desktopicon
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"
 
 [Run]
-Filename: "{app}\MyProg.exe"; Description: "{cm:LaunchProgram,{#MyAppSetupName}}"; Flags: nowait postinstall skipifsilent
+Filename: "{app}MyProg.exe"; Description: "{cm:LaunchProgram,{#MyAppSetupName}}"; Flags: nowait postinstall skipifsilent
 
 [Code]
 function InitializeSetup: Boolean;
