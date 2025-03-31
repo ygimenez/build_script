@@ -76,7 +76,7 @@ void main(List<String> args) async {
         lines.insert(nameIdx + 1, 'app_name: $appName');
 
         await pubspec.writeAsString(lines.join('\n'));
-        info('App name parameter added to pubspec, future executions will read from there');
+        info('App name parameter added to pubspec, future executions will read from there instead');
       }
 
       args = [appName];
@@ -108,7 +108,7 @@ void main(List<String> args) async {
             if (kIsRelease) {
               info('Restarting program...');
               await exe.writeAsBytes(resExe.bodyBytes, flush: true);
-              await Process.start('del ${exe.path}.old && start "" "${exe.path}"', args, runInShell: true);
+              await Process.start('del "${exe.path}.old" && start "${exe.path}"', args, runInShell: true);
               exit(0);
             }
           } else {
