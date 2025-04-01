@@ -46,40 +46,57 @@ void main(List<String> args) async {
           args = [appName];
           info('App name: $appName');
         }
+
+        final appVersion = yaml['version'];
+        if (args.length < 2 && appVersion != null) {
+          args = [...args, appVersion];
+          info('App version: $appName');
+        }
       } else {
         error('Pubspec not found, this program must be placed at project root');
         throw "Wrong root";
       }
     }
 
-    if (args.isEmpty) {
+    if (args.length < 2) {
       info('App name: ');
-      final appName = stdin.readLineSync()?.replaceAll(' ', '').trim();
+      final appName = (stdin.readLineSync() ?? '').replaceAll(' ', '').trim();
 
-      if (appName == null) {
-        error('An app name is required');
+      info('App version: ');
+      final appVersion = (stdin.readLineSync() ?? '').replaceAll(' ', '').trim();
+
+      if (appName.isEmpty || appVersion.isEmpty) {
+        error('An app name and version are required');
         info(
           '''
         Usage:
-        - ${Platform.script.pathSegments.last} ${Green('[App name]')}
+        - ${Platform.script.pathSegments.last} ${Green('[App name]')} ${Green('[App version]')}
         '''
               .replaceAll(RegExp(r'^\s+', multiLine: true), ''),
         );
 
-        throw "No app name";
+        throw "No app name or version";
       }
 
       if (kIsRelease) {
         final pubspec = File('pubspec.yaml');
         final lines = await pubspec.readAsLines();
-        final nameIdx = lines.indexWhere((l) => l.startsWith('name:'));
-        lines.insert(nameIdx + 1, 'app_name: $appName');
+        final idx = lines.indexWhere((l) => l.startsWith('description:'));
+
+        if (!lines.any((l) => l.startsWith('app_name:'))) {
+          lines.insert(idx + 1, 'app_name: $appName');
+          info('App name parameter added to pubspec, future executions will read from there instead');
+        }
+
+        if (!lines.any((l) => l.startsWith('version:'))) {
+          lines.insert(idx + 1, 'version: $appVersion');
+          info('App version parameter added to pubspec, future executions will read from there instead');
+        }
 
         await pubspec.writeAsString(lines.join('\n'));
-        info('App name parameter added to pubspec, future executions will read from there instead');
       }
 
-      args = [appName];
+      args = [appName, appVersion];
     }
 
     info('BuildScript Version $kVersion');
@@ -169,7 +186,7 @@ void main(List<String> args) async {
       }
     }
 
-    final appName = args.first;
+    final [appName, appVersion] = args;
     if (await Directory('./windows').exists()) {
       info('--------------------- WINDOWS ---------------------');
 
@@ -181,7 +198,7 @@ void main(List<String> args) async {
 
         final props = {
           'TITLE': nameParts.join(' '),
-          'VERSION': kVersion,
+          'VERSION': appVersion,
           'EXENAME': nameParts.join(' ').toLowerCase(),
           'GUID': uuid.v5(Namespace.url.value, 'bels.com.br/$appName'),
           'NAME': appName,
@@ -206,7 +223,7 @@ void main(List<String> args) async {
       await exec('flutter', args: ['build', 'windows']) &&
           await exec('iscc', args: ['Installer.iss'], path: r'C:\Program Files (x86)\Inno Setup 6\') &&
           await exec('rar',
-              args: ['a', '-df', '-ep1', join(output.path, 'Windows_${appName}_$kVersion.rar'), join(output.path, '${appName}_setup.exe')], path: r'C:\Program Files\WinRAR\');
+              args: ['a', '-df', '-ep1', join(output.path, 'Windows_${appName}_$appVersion.rar'), join(output.path, '${appName}_setup.exe')], path: r'C:\Program Files\WinRAR\');
     }
 
     if (await Directory('./android').exists()) {
@@ -217,7 +234,7 @@ void main(List<String> args) async {
         File apk = File('build/app/outputs/flutter-apk/app-release.apk');
         if (await apk.exists()) {
           apk = await apk.rename('${apk.parent.path}/$appName.apk');
-          await exec('rar', args: ['a', '-ep1', join(output.path, 'Android_${appName}_$kVersion.rar'), apk.path], path: r'C:\Program Files\WinRAR\');
+          await exec('rar', args: ['a', '-ep1', join(output.path, 'Android_${appName}_$appVersion.rar'), apk.path], path: r'C:\Program Files\WinRAR\');
         }
       }
     }
@@ -233,7 +250,7 @@ void main(List<String> args) async {
       final built = await exec('flutter', args: ['build', 'web']);
       if (built) {
         final dir = Directory('build/web');
-        await exec('rar', args: ['a', '-r', '-ep1', join(output.path, 'Web_${appName}_$kVersion.rar'), join(dir.path, '*')], path: r'C:\Program Files\WinRAR\');
+        await exec('rar', args: ['a', '-r', '-ep1', join(output.path, 'Web_${appName}_$appVersion.rar'), join(dir.path, '*')], path: r'C:\Program Files\WinRAR\');
       }
     }
   } catch (e) {
