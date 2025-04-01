@@ -32,6 +32,9 @@ void main(List<String> args) async {
       throw "Not admin";
     }
 
+    if (args.length < 2) args = ['', ''];
+    var [appName, appVersion] = args;
+
     if (kIsRelease) {
       final pubspec = File('pubspec.yaml');
       if (await pubspec.exists()) {
@@ -41,62 +44,57 @@ void main(List<String> args) async {
           throw "Not a flutter project";
         }
 
-        final appName = yaml['app_name'];
-        if (args.isEmpty && appName != null) {
-          args = [appName];
-          info('App name: $appName');
-        }
-
-        final appVersion = yaml['version'];
-        if (args.length < 2 && appVersion != null) {
-          args = [...args, appVersion];
-          info('App version: $appName');
-        }
+        appName = yaml['app_name'] ?? appName;
+        appVersion = yaml['version'] ?? appVersion;
       } else {
         error('Pubspec not found, this program must be placed at project root');
         throw "Wrong root";
       }
     }
 
-    if (args.length < 2) {
-      info('App name: ');
-      final appName = (stdin.readLineSync() ?? '').replaceAll(' ', '').trim();
+    info('App name: ');
+    if (appName.isEmpty) {
+      appName = (stdin.readLineSync() ?? '').replaceAll(' ', '').trim();
+    } else {
+      info(appName, true);
+    }
 
-      info('App version: ');
-      final appVersion = (stdin.readLineSync() ?? '').replaceAll(' ', '').trim();
+    info('App version: ');
+    if (appName.isEmpty) {
+      appVersion = (stdin.readLineSync() ?? '').replaceAll(' ', '').trim();
+    } else {
+      info(appVersion, true);
+    }
 
-      if (appName.isEmpty || appVersion.isEmpty) {
-        error('An app name and version are required');
-        info(
-          '''
+    if (appName.isEmpty || appVersion.isEmpty) {
+      error('An app name and version are required');
+      info(
+        '''
         Usage:
         - ${Platform.script.pathSegments.last} ${Green('[App name]')} ${Green('[App version]')}
         '''
-              .replaceAll(RegExp(r'^\s+', multiLine: true), ''),
-        );
+            .replaceAll(RegExp(r'^\s+', multiLine: true), ''),
+      );
 
-        throw "No app name or version";
+      throw "No app name or version";
+    }
+
+    if (kIsRelease) {
+      final pubspec = File('pubspec.yaml');
+      final lines = await pubspec.readAsLines();
+      final idx = lines.indexWhere((l) => l.startsWith('description:'));
+
+      if (!lines.any((l) => l.startsWith('app_name:'))) {
+        lines.insert(idx + 1, 'app_name: $appName');
+        info('App name parameter added to pubspec, future executions will read from there instead');
       }
 
-      if (kIsRelease) {
-        final pubspec = File('pubspec.yaml');
-        final lines = await pubspec.readAsLines();
-        final idx = lines.indexWhere((l) => l.startsWith('description:'));
-
-        if (!lines.any((l) => l.startsWith('app_name:'))) {
-          lines.insert(idx + 1, 'app_name: $appName');
-          info('App name parameter added to pubspec, future executions will read from there instead');
-        }
-
-        if (!lines.any((l) => l.startsWith('version:'))) {
-          lines.insert(idx + 1, 'version: $appVersion');
-          info('App version parameter added to pubspec, future executions will read from there instead');
-        }
-
-        await pubspec.writeAsString(lines.join('\n'));
+      if (!lines.any((l) => l.startsWith('version:'))) {
+        lines.insert(idx + 1, 'version: $appVersion');
+        info('App version parameter added to pubspec, future executions will read from there instead');
       }
 
-      args = [appName, appVersion];
+      await pubspec.writeAsString(lines.join('\n'));
     }
 
     info('BuildScript Version $kVersion');
@@ -104,8 +102,7 @@ void main(List<String> args) async {
     info('---------------------------------------------------');
 
     info('Checking for updates...');
-    final res = await cli.send(http.Request('HEAD', Uri.parse('$kRepository/releases/latest'))
-      ..followRedirects = false);
+    final res = await cli.send(http.Request('HEAD', Uri.parse('$kRepository/releases/latest'))..followRedirects = false);
     if (res.headers.containsKey('location')) {
       final latest = res.headers['location']!.split('/').last;
 
@@ -186,7 +183,6 @@ void main(List<String> args) async {
       }
     }
 
-    final [appName, appVersion] = args;
     if (await Directory('./windows').exists()) {
       info('--------------------- WINDOWS ---------------------');
 
@@ -281,9 +277,7 @@ Future<bool> exec(String program, {String path = '', List<String> args = const [
       if (packageId != null) {
         installed = await Process.start('choco', ['install', packageId, '-y'], mode: ProcessStartMode.inheritStdio).then((p) => p.exitCode) == 0;
       } else if (installScript != null) {
-        final prog = installScript
-            .split(' ')
-            .first;
+        final prog = installScript.split(' ').first;
         final args = installScript.replaceFirst(prog, '').trim();
         installed = await Process.start(prog, [args], mode: ProcessStartMode.inheritStdio).then((p) => p.exitCode) == 0;
       }
@@ -293,11 +287,7 @@ Future<bool> exec(String program, {String path = '', List<String> args = const [
         throw "Failed to install dependency";
       } else {
         info("Installed '$program' successfully");
-        return exec(program, path: path,
-            args: args,
-            packageId: packageId,
-            installScript: installScript,
-            writeOutput: writeOutput);
+        return exec(program, path: path, args: args, packageId: packageId, installScript: installScript, writeOutput: writeOutput);
       }
     }
 
