@@ -188,6 +188,9 @@ void main(List<String> args) async {
 
       /* Remake Installer */
       {
+        final pubspec = File('pubspec.yaml');
+        final yaml = loadYaml(await pubspec.readAsString());
+
         final installer = File('Installer.iss');
         final nameParts = appName.split(RegExp(r'(?<=.)(?=[A-Z][a-z])'));
         final uuid = Uuid();
@@ -195,8 +198,8 @@ void main(List<String> args) async {
         final props = {
           'TITLE': nameParts.join(' '),
           'VERSION': appVersion,
-          'EXENAME': nameParts.join(' ').toLowerCase(),
-          'GUID': uuid.v5(Namespace.url.value, 'bels.com.br/$appName'),
+          'EXENAME': yaml['name'],
+          'GUID': uuid.v5(Namespace.url.value, 'bels.com.br/${yaml['name']}'),
           'NAME': appName,
         };
 
