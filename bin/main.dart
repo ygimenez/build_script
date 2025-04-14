@@ -141,7 +141,7 @@ void main(List<String> args) async {
 
     info('Checking dependencies');
     final deps = {
-      'Chocolatey': () async => await exec('choco', args: ['--version'], installScript: kChocoInstall, writeOutput: false),
+      'Chocolatey': () async => await exec('choco', args: ['--version'], packageId: 'chocolatey', installScript: kChocoInstall, writeOutput: false),
       'Dart SDK': () async => await exec('dart', args: ['--version'], packageId: 'dart-sdk', writeOutput: false),
       'Flutter SDK': () async => await exec('flutter', args: ['--version'], packageId: 'flutter', writeOutput: false),
       'Inno Setup': () async => await exec('iscc', args: ['/?'], path: r'C:\Program Files (x86)\Inno Setup 6\', packageId: 'innosetup', writeOutput: false),
@@ -269,6 +269,10 @@ void main(List<String> args) async {
 
 Future<bool> exec(String program, {String path = '', List<String> args = const [], String? packageId, String? installScript, bool writeOutput = true}) async {
   try {
+    if (packageId != null) {
+      await Process.run('choco', ['upgrade', packageId, '-y']);
+    }
+
     if (writeOutput) {
       info('');
       return await Process.start('$path$program', args, runInShell: true, mode: ProcessStartMode.inheritStdio).then((p) => p.exitCode) == 0;
@@ -280,9 +284,7 @@ Future<bool> exec(String program, {String path = '', List<String> args = const [
       info("Process '$program' not found, installing...\n");
 
       bool installed = false;
-      if (packageId != null) {
-        installed = await Process.start('choco', ['install', packageId, '-y'], mode: ProcessStartMode.inheritStdio).then((p) => p.exitCode) == 0;
-      } else if (installScript != null) {
+      if (installScript != null) {
         final prog = installScript.split(' ').first;
         final args = installScript.replaceFirst(prog, '').trim();
         installed = await Process.start(prog, [args], mode: ProcessStartMode.inheritStdio).then((p) => p.exitCode) == 0;
