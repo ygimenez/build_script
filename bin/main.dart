@@ -208,8 +208,11 @@ void main(List<String> args) async {
 
       /* Remake CodeDependencies */
       {
-        final codeDeps = File('CodeDependencies.iss');
-        await codeDeps.writeAsString(kCodeDependencies);
+        final res = await http.get(Uri.parse('https://raw.githubusercontent.com/DomGries/InnoDependencyInstaller/refs/heads/master/CodeDependencies.iss'));
+        if (res.statusCode ~/ 200 == 0) {
+          final codeDeps = File('CodeDependencies.iss');
+          await codeDeps.writeAsBytes(res.bodyBytes);
+        }
       }
 
       final icon = File('asset/installer.ico');
