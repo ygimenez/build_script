@@ -283,20 +283,18 @@ Future<bool> exec(String program, {String path = '', List<String> args = const [
     if (packageId != null || installScript != null) {
       info("Process '$program' not found, installing...\n");
 
-      bool installed = false;
       if (installScript != null) {
         final prog = installScript.split(' ').first;
         final args = installScript.replaceFirst(prog, '').trim();
-        installed = await Process.start(prog, [args], mode: ProcessStartMode.inheritStdio).then((p) => p.exitCode) == 0;
+
+        if (await Process.start(prog, [args], mode: ProcessStartMode.inheritStdio).then((p) => p.exitCode) != 0) {
+          error("Failed to install dependency '$program', aborting execution");
+          throw "Failed to install dependency";
+        }
       }
 
-      if (!installed) {
-        error("Failed to install dependency '$program', aborting execution");
-        throw "Failed to install dependency";
-      } else {
-        info("Installed '$program' successfully");
-        return exec(program, path: path, args: args, packageId: packageId, installScript: installScript, writeOutput: writeOutput);
-      }
+      info("Installed '$program' successfully");
+      return exec(program, path: path, args: args, packageId: packageId, installScript: installScript, writeOutput: writeOutput);
     }
 
     error("Process '$program' not found, please install before proceeding");
