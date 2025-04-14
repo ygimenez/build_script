@@ -209,7 +209,7 @@ void main(List<String> args) async {
       /* Remake CodeDependencies */
       {
         final res = await http.get(Uri.parse('https://raw.githubusercontent.com/DomGries/InnoDependencyInstaller/refs/heads/master/CodeDependencies.iss'));
-        if (res.statusCode ~/ 200 == 0) {
+        if (res.statusCode ~/ 100 == 2) {
           final codeDeps = File('CodeDependencies.iss');
           await codeDeps.writeAsBytes(res.bodyBytes);
         }
