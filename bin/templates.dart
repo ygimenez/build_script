@@ -7,14 +7,14 @@ const kInstaller = r'''
 
 #define MyAppName "{{TITLE}}"
 #define MyAppVersion "{{VERSION}}"
-#define MyAppPublisher "Bels Sistema"
-#define MyAppURL "https://www.bels.com/"
+#define MyAppPublisher "Bels Sistemas"
+#define MyAppURL "https://www.bels.com.br/"
 #define MyAppExeName "{{EXENAME}}.exe"
 
 [Setup]
 ; NOTE: The value of AppId uniquely identifies this application. Do not use the same AppId value in installers for other applications.
 ; (To generate a new GUID, click Tools | Generate GUID inside the IDE.)
-AppId={{GUID}}
+AppId={{{GUID}}}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
 ; AppVerName={#MyAppName} {#MyAppVersion}
@@ -45,8 +45,7 @@ Source: ".\native\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs crea
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 
 [Icons]
-Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
-Name: "{group}\{cm:UninstallProgram,{#MyAppName}}"; Filename: "{uninstallexe}"
+Name: "{autoprograms}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
 Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
 
 [Run]
