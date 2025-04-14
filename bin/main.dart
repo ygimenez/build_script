@@ -18,6 +18,7 @@ const kChocoInstall =
 
 final cli = http.Client();
 final exe = File(kIsRelease ? 'build_script.exe' : basename(Platform.script.path));
+final outdated = <String>[];
 
 void main(List<String> args) async {
   try {
@@ -27,7 +28,7 @@ void main(List<String> args) async {
       ]).then((p) => (p.stdout as String).toLowerCase().trim()),
     );
 
-    if (!isAdmin) {
+    if (kIsRelease && !isAdmin) {
       error('This program requires elevation');
       throw "Not admin";
     }
@@ -60,7 +61,7 @@ void main(List<String> args) async {
     }
 
     info('App version: ');
-    if (appName.isEmpty) {
+    if (appVersion.isEmpty) {
       appVersion = (stdin.readLineSync() ?? '').replaceAll(' ', '').trim();
     } else {
       info(appVersion, true);
@@ -270,7 +271,23 @@ void main(List<String> args) async {
 Future<bool> exec(String program, {String path = '', List<String> args = const [], String? packageId, String? installScript, bool writeOutput = true}) async {
   try {
     if (packageId != null) {
-      await Process.run('choco', ['upgrade', packageId, '-y']);
+      if (packageId == 'chocolatey') {
+        final String out = await Process.run('choco', ['outdated']).then((p) => p.stdout);
+        final rex = RegExp(r'([\w-.]+?)\|[\d.]+?\|[\d.]+?\|false', multiLine: true);
+        for (final m in rex.allMatches(out)) {
+          outdated.add(m.group(1)!);
+        }
+
+        print(outdated);
+      }
+
+      if (outdated.contains(packageId)) {
+        info('New version found, type "y" to update: ');
+        final opt = (stdin.readLineSync() ?? '').toLowerCase();
+        if (opt == 'y') {
+          await Process.run('choco', ['upgrade', '-y', packageId]);
+        }
+      }
     }
 
     if (writeOutput) {
