@@ -277,8 +277,6 @@ Future<bool> exec(String program, {String path = '', List<String> args = const [
         for (final m in rex.allMatches(out)) {
           outdated.add(m.group(1)!);
         }
-
-        print(outdated);
       }
 
       if (outdated.contains(packageId)) {
