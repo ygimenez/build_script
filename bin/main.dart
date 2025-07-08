@@ -13,24 +13,32 @@ const kVersion = 'DEV';
 const kRepository = 'https://github.com/ygimenez/build_script';
 const kBlobs = 'https://raw.githubusercontent.com/ygimenez/build_script/refs/heads/master';
 const kIsRelease = kVersion != 'DEV';
+const kFlutterVersion = '3.32.0';
+const kFlutterRepo = 'https://storage.googleapis.com/flutter_infra_release/releases/stable';
 const kChocoInstall =
     "Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))";
 
 final cli = http.Client();
 final exe = File(kIsRelease ? 'build_script.exe' : basename(Platform.script.path));
 final outdated = <String>[];
+String out = '';
 
 void main(List<String> args) async {
   try {
     final isAdmin = bool.parse(
-      await Process.run('powershell', [
-        '([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)',
-      ]).then((p) => (p.stdout as String).toLowerCase().trim()),
+      (Process.runSync(
+                  'powershell',
+                  [
+                    '([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)',
+                  ],
+                  runInShell: true)
+              .stdout as String)
+          .toLowerCase()
+          .trim(),
     );
 
     if (kIsRelease && !isAdmin) {
-      error('This program requires elevation');
-      throw "Not admin";
+      throw 'This program requires elevation';
     }
 
     if (args.length < 2) args = ['', ''];
@@ -41,34 +49,36 @@ void main(List<String> args) async {
       if (await pubspec.exists()) {
         final yaml = loadYaml(await pubspec.readAsString());
         if (yaml['dependencies']?['flutter']?['sdk'] != 'flutter') {
-          error('Project is not a flutter project');
-          throw "Not a flutter project";
+          throw 'Project is not a flutter project';
         }
 
         appName = yaml['app_name'] ?? appName;
         appVersion = yaml['version'] ?? appVersion;
       } else {
-        error('Pubspec not found, this program must be placed at project root');
-        throw "Wrong root";
+        throw 'Pubspec not found, this program must be placed at project root';
       }
     }
 
-    info('App name: ');
-    if (appName.isEmpty) {
-      appName = (stdin.readLineSync() ?? '').replaceAll(' ', '').trim();
-    } else {
-      info(appName, true);
-    }
+    if (kIsRelease) {
+      info('App name: ');
+      if (appName.isEmpty) {
+        appName = (stdin.readLineSync() ?? '').replaceAll(' ', '').trim();
+      } else {
+        info(appName, true);
+      }
 
-    info('App version: ');
-    if (appVersion.isEmpty) {
-      appVersion = (stdin.readLineSync() ?? '').replaceAll(' ', '').trim();
+      info('App version: ');
+      if (appVersion.isEmpty) {
+        appVersion = (stdin.readLineSync() ?? '').replaceAll(' ', '').trim();
+      } else {
+        info(appVersion, true);
+      }
     } else {
-      info(appVersion, true);
+      appName = 'debug';
+      appVersion = '0';
     }
 
     if (appName.isEmpty || appVersion.isEmpty) {
-      error('An app name and version are required');
       info(
         '''
         Usage:
@@ -77,7 +87,7 @@ void main(List<String> args) async {
             .replaceAll(RegExp(r'^\s+', multiLine: true), ''),
       );
 
-      throw "No app name or version";
+      throw 'An app name and version are required';
     }
 
     if (kIsRelease) {
@@ -143,7 +153,6 @@ void main(List<String> args) async {
     info('Checking dependencies');
     final deps = {
       'Chocolatey': () async => await exec('choco', args: ['--version'], packageId: 'chocolatey', installScript: kChocoInstall, writeOutput: false),
-      'Dart SDK': () async => await exec('dart', args: ['--version'], packageId: 'dart-sdk', writeOutput: false),
       'Flutter SDK': () async => await exec('flutter', args: ['--version'], packageId: 'flutter', writeOutput: false),
       'Inno Setup': () async => await exec('iscc', args: ['/?'], path: r'C:\Program Files (x86)\Inno Setup 6\', packageId: 'innosetup', writeOutput: false),
       'WinRAR': () async => await exec('rar', args: ['-iver'], path: r'C:\Program Files\WinRAR\', packageId: 'winrar', writeOutput: false),
@@ -173,7 +182,9 @@ void main(List<String> args) async {
       }
     }
 
-    await exec('flutter', args: ['clean']);
+    if (kIsRelease) {
+      await exec('flutter', args: ['clean']);
+    }
 
     final output = Directory('./output');
     if (!await output.exists()) {
@@ -184,14 +195,13 @@ void main(List<String> args) async {
       }
     }
 
+    final pubspec = File('pubspec.yaml');
+    final yaml = loadYaml(await pubspec.readAsString());
+
     if (await Directory('./windows').exists()) {
       info('--------------------- WINDOWS ---------------------');
-
       /* Remake Installer */
       {
-        final pubspec = File('pubspec.yaml');
-        final yaml = loadYaml(await pubspec.readAsString());
-
         final installer = File('Installer.iss');
         final nameParts = appName.split(RegExp(r'(?<=.)(?=[A-Z][a-z])'));
         final uuid = Uuid();
@@ -204,7 +214,7 @@ void main(List<String> args) async {
           'NAME': appName,
         };
 
-        await installer.writeAsString(kInstaller.replaceAllMapped(RegExp(r'{{(\w+)}}'), (match) => props[match[1]] ?? ""));
+        await installer.writeAsString(kInstaller.replaceAllMapped(RegExp(r'{{(\w+)}}'), (match) => props[match[1]] ?? ''));
       }
 
       /* Remake CodeDependencies */
@@ -225,8 +235,143 @@ void main(List<String> args) async {
 
       await exec('flutter', args: ['build', 'windows']) &&
           await exec('iscc', args: ['Installer.iss'], path: r'C:\Program Files (x86)\Inno Setup 6\') &&
-          await exec('rar',
-              args: ['a', '-df', '-ep1', join(output.path, 'Windows_${appName}_$appVersion.rar'), join(output.path, '${appName}_setup.exe')], path: r'C:\Program Files\WinRAR\');
+          await exec(
+            'rar',
+            args: ['a', '-df', '-ep1', join(output.path, 'Windows_${appName}_$appVersion.rar'), join(output.path, '${appName}_setup.exe')],
+            path: r'C:\Program Files\WinRAR\',
+          );
+    }
+
+    if (await Directory('./linux').exists()) {
+      info('---------------------  LINUX  ---------------------');
+      await exec('wsl', args: ['--update']);
+      final hasDebian = (Process.runSync('wsl', ['--list'], runInShell: true).stdout as String) //
+          .replaceAll('\u0000', '')
+          .split(Platform.lineTerminator)
+          .any((d) => d.startsWith('Debian'));
+
+      if (!hasDebian) {
+        info('Installing WSL (Debian)...');
+        await exec('wsl', args: ['--install', 'Debian']);
+      }
+
+      const sudo = ['-u', 'root'];
+      final config = await exec('wsl', args: [...sudo, 'apt', 'update', '-y']) &&
+          await exec('wsl', args: [...sudo, 'apt', 'install', '-y', 'crudini']) &&
+          await exec('wsl', args: [...sudo, 'crudini', '--ini-options=nospace', '--set', '/etc/wsl.conf', 'automount', 'options', '"metadata"']) &&
+          await exec('wsl', args: ['--shutdown']);
+
+      if (!config) {
+        throw 'Failed to configure WSL';
+      }
+
+      const deps = [
+        'curl',
+        'git',
+        'unzip',
+        'xz-utils',
+        'zip',
+        'libglu1-mesa',
+        'clang',
+        'cmake',
+        'ninja-build',
+        'pkg-config',
+        'libgtk-3-dev',
+        'liblzma-dev',
+        'libstdc++-12-dev',
+      ];
+
+      final devDeps = <String>[];
+      {
+        final depFile = File('.dev-dependencies');
+        if (await depFile.exists()) {
+          devDeps.addAll(await depFile.readAsLines());
+        }
+        info('Found build dependencies: ${devDeps.join(', ')}');
+      }
+
+      final useDeps = <String>[];
+      {
+        final depFile = File('.dependencies');
+        if (await depFile.exists()) {
+          useDeps.addAll(await depFile.readAsLines());
+        }
+        info('Found required dependencies: ${useDeps.join(', ')}');
+      }
+
+      info('Verifying Flutter installation...');
+
+      while (true) {
+        await exec('wsl', args: [...sudo, 'apt', 'install', '-y', ...deps, ...devDeps]);
+
+        if (await exec('wsl', args: ['flutter', '--version'], writeOutput: false)) {
+          info('OK', true);
+          break;
+        }
+
+        info('Downloading Flutter...');
+        if (!await exec('wsl', args: ['ls', '~/flutter.tar.xz'], writeOutput: false)) {
+          final downloaded = await exec('wsl', args: ['curl', '$kFlutterRepo/linux/flutter_linux_$kFlutterVersion-stable.tar.xz', '-o', '~/flutter.tar.xz']);
+          if (!downloaded) {
+            throw 'Failed to download package';
+          }
+        }
+
+        final homeDir = (Process.runSync('wsl', ['echo', '~'], runInShell: true).stdout as String).trim();
+
+        info('Extracting files...');
+        await exec('wsl', args: ['rm', '-r', '~/flutter']) &&
+            await exec('wsl', args: ['tar', '-xvf', '~/flutter.tar.xz', '-C', '~/']) &&
+            await exec('wsl', args: [...sudo, 'ln', '-s', '$homeDir/flutter/bin/flutter', '/usr/bin']) &&
+            await exec('wsl', args: [...sudo, 'git', 'config', '--global', '--add', 'safe.directory', '$homeDir/flutter']);
+      }
+
+      final packName = yaml['name'];
+      final root = 'build/build_script';
+      final built = await exec('wsl', args: [...sudo, 'flutter', 'build', 'linux']) &&
+          await exec('wsl', args: [...sudo, 'mkdir', '-p', '$root/$packName/opt/bels/$packName']) &&
+          await exec('wsl', args: [...sudo, 'mkdir', '-p', '$root/$packName/DEBIAN']) &&
+          await exec('wsl', args: [...sudo, 'chmod', '755', '$root/$packName/DEBIAN']) &&
+          await exec('wsl', args: [...sudo, 'cp', '-r', 'build/linux/x64/release/bundle/*', '$root/$packName/opt/bels/$packName/']) &&
+          await exec('wsl', args: [...sudo, 'chmod', '777', '$root/$packName/opt/bels/$packName/']);
+
+      if (!built) {
+        throw 'Failed to buid application';
+      }
+
+      final props = {
+        'TITLE': appName,
+        'VERSION': appVersion,
+        'EXENAME': packName,
+      };
+
+      final control = File('./$root/$packName/DEBIAN/control');
+      if (!await control.exists()) {
+        await control.create();
+      }
+
+      await control.writeAsString(kControl.replaceAllMapped(RegExp(r'{{(\w+)}}'), (match) => props[match[1]] ?? ''));
+      if (useDeps.isNotEmpty) {
+        await control.writeAsString('Depends: ${useDeps.join(',')}', mode: FileMode.append);
+      }
+      await exec('wsl', args: [...sudo, 'chmod', '555', control.path]);
+
+      final post = File('./$root/$packName/DEBIAN/postinst');
+      if (!await post.exists()) {
+        await post.create();
+      }
+
+      await post.writeAsString(kPostInstall.replaceAllMapped(RegExp(r'{{(\w+)}}'), (match) => props[match[1]] ?? ''));
+      await exec('wsl', args: [...sudo, 'chmod', '555', post.path]);
+
+      info('Packing application...');
+      await exec('wsl', args: [...sudo, 'dpkg-deb', '--build', '$root/$packName']) &&
+          await exec('wsl', args: [...sudo, 'mv', '$root/$packName.deb', output.path]) &&
+          await exec(
+            'rar',
+            args: ['a', '-df', '-ep1', join(output.path, 'Linux_${appName}_$appVersion.rar'), join(output.path, '$packName.deb')],
+            path: r'C:\Program Files\WinRAR\',
+          );
     }
 
     if (await Directory('./android').exists()) {
@@ -242,18 +387,14 @@ void main(List<String> args) async {
       }
     }
 
-    if (await Directory('./linux').exists()) {
-      info('---------------------  LINUX  ---------------------');
-      // NOT IMPLEMENTED
-    }
-
     if (await Directory('./web').exists()) {
       info('---------------------   WEB   ---------------------');
 
       final built = await exec('flutter', args: ['build', 'web']);
       if (built) {
         final dir = Directory('build/web');
-        await exec('rar', args: ['a', '-r', '-ep1', join(output.path, 'Web_${appName}_$appVersion.rar'), join(dir.path, '*')], path: r'C:\Program Files\WinRAR\');
+        await exec('rar',
+            args: ['a', '-r', '-ep1', join(output.path, 'Web_${appName}_$appVersion.rar'), join(dir.path, '*')], path: r'C:\Program Files\WinRAR\');
       }
     }
   } catch (e) {
@@ -272,7 +413,7 @@ Future<bool> exec(String program, {String path = '', List<String> args = const [
   try {
     if (packageId != null) {
       if (packageId == 'chocolatey') {
-        final String out = await Process.run('choco', ['outdated']).then((p) => p.stdout);
+        final String out = Process.runSync('choco', ['outdated'], runInShell: true).stdout;
         final rex = RegExp(r'([\w-.]+?)\|[\d.]+?\|[\d.]+?\|false', multiLine: true);
         for (final m in rex.allMatches(out)) {
           outdated.add(m.group(1)!);
@@ -283,37 +424,42 @@ Future<bool> exec(String program, {String path = '', List<String> args = const [
         info('New version found, type "y" to update: ');
         final opt = (stdin.readLineSync() ?? '').toLowerCase();
         if (opt == 'y') {
-          await Process.run('choco', ['upgrade', '-y', packageId]);
+          if (Process.runSync('choco', ['upgrade', '-y', packageId], runInShell: true).exitCode != 0) {
+            throw 'Failed to update dependency "$program", aborting execution';
+          }
         }
       }
     }
 
     if (writeOutput) {
-      info('');
-      return await Process.start('$path$program', args, runInShell: true, mode: ProcessStartMode.inheritStdio).then((p) => p.exitCode) == 0;
+      if (!out.endsWith('\n')) info('');
+
+      final proc = await Process.start('$path$program', args, runInShell: true)
+        ..stdout.forEach((bytes) => info(String.fromCharCodes(bytes.where((b) => b > 0)), true))
+        ..stderr.forEach((bytes) => error(String.fromCharCodes(bytes.where((b) => b > 0)), true));
+
+      return await proc.exitCode == 0;
     }
 
-    return await Process.run('$path$program', args, runInShell: true).then((p) => p.exitCode) == 0;
+    return Process.runSync('$path$program', args, runInShell: true).exitCode == 0;
   } on ProcessException {
     if (packageId != null || installScript != null) {
-      info("Process '$program' not found, installing...\n");
+      info('Process "$program" not found, installing...\n');
 
       if (installScript != null) {
         final prog = installScript.split(' ').first;
         final args = installScript.replaceFirst(prog, '').trim();
 
-        if (await Process.start(prog, [args], mode: ProcessStartMode.inheritStdio).then((p) => p.exitCode) != 0) {
-          error("Failed to install dependency '$program', aborting execution");
-          throw "Failed to install dependency";
+        if (await Process.start(prog, [args], runInShell: true, mode: ProcessStartMode.inheritStdio).then((p) => p.exitCode) != 0) {
+          throw 'Failed to install dependency "$program", aborting execution';
         }
       }
 
-      info("Installed '$program' successfully");
+      info('Installed "$program" successfully');
       return exec(program, path: path, args: args, packageId: packageId, installScript: installScript, writeOutput: writeOutput);
     }
 
-    error("Process '$program' not found, please install before proceeding");
-    throw "Dependency unmet";
+    throw 'Process "$program" not found, please install before proceeding';
   }
 }
 
@@ -330,5 +476,7 @@ void error(content, [bool inline = false]) {
 }
 
 void log(ConsoleColor content, [bool inline = false]) {
-  stdout.write('${inline ? '' : '\n'}$content');
+  final line = '${inline ? '' : '\n'}$content';
+  stdout.write(line);
+  out += line;
 }

@@ -60,3 +60,16 @@ begin
   Result := True;
 end;
 ''';
+
+const kControl = r'''
+Package: {{TITLE}}
+Version: {{VERSION}}
+Architecture: all
+Maintainer: Bels Sistemas
+Description: Um sofware Bels
+''';
+
+const kPostInstall = r'''
+#!/bin/sh
+sudo chmod +x {{EXENAME}}
+''';
