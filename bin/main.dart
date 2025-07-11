@@ -352,7 +352,7 @@ void main(List<String> args) async {
 
       await control.writeAsString(kControl.replaceAllMapped(RegExp(r'{{(\w+)}}'), (match) => props[match[1]] ?? ''));
       if (useDeps.isNotEmpty) {
-        await control.writeAsString('Depends: ${useDeps.join(',')}', mode: FileMode.append);
+        await control.writeAsString('Depends: ${useDeps.join(',')}\n', mode: FileMode.append);
       }
       await exec('wsl', args: [...sudo, 'chmod', '555', control.path]);
 
