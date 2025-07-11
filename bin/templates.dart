@@ -71,5 +71,5 @@ Description: Um sofware Bels
 
 const kPostInstall = r'''
 #!/bin/sh
-sudo chmod +x {{EXENAME}}
+sudo chmod +x /opt/bels/{{EXENAME}}/{{EXENAME}}
 ''';
