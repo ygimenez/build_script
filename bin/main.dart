@@ -340,9 +340,8 @@ void main(List<String> args) async {
       }
 
       final props = {
-        'TITLE': appName,
+        'PACKAGE': packName,
         'VERSION': appVersion,
-        'EXENAME': packName,
       };
 
       final control = File('./$root/$packName/DEBIAN/control');

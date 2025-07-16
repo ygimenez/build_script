@@ -62,7 +62,7 @@ end;
 ''';
 
 const kControl = r'''
-Package: {{TITLE}}
+Package: {{PACKAGE}}
 Version: {{VERSION}}
 Architecture: all
 Maintainer: Bels Sistemas
@@ -71,5 +71,5 @@ Description: Um sofware Bels
 
 const kPostInstall = r'''
 #!/bin/sh
-sudo chmod +x /opt/bels/{{EXENAME}}/{{EXENAME}}
+sudo chmod +x /opt/bels/{{PACKAGE}}/{{PACKAGE}}
 ''';
