@@ -359,14 +359,6 @@ void main(List<String> args) async {
       }
       await exec('wsl', args: [...sudo, 'chmod', '555', control.path]);
 
-      final post = File('./$root/$name/DEBIAN/postinst');
-      if (!await post.exists()) {
-        await post.create();
-      }
-
-      await post.writeAsString(kPostInstall.replaceAllMapped(RegExp(r'{{(\w+)}}'), (match) => props[match[1]] ?? ''));
-      await exec('wsl', args: [...sudo, 'chmod', '555', post.path]);
-
       info('Packing application...');
       await exec('wsl', args: [...sudo, 'dpkg-deb', '--build', '$root/$name']) &&
           await exec('wsl', args: [...sudo, 'mv', '$root/$name.deb', output.path]) &&

@@ -68,8 +68,3 @@ Architecture: all
 Maintainer: Bels Sistemas
 Description: Um sofware Bels
 ''';
-
-const kPostInstall = r'''
-#!/bin/sh
-sudo chmod +x /opt/bels/{{PACKAGE}}/{{EXENAME}}
-''';
