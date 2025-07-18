@@ -259,6 +259,7 @@ void main(List<String> args) async {
       final config = await exec('wsl', args: [...sudo, 'apt', 'update', '-y']) &&
           await exec('wsl', args: [...sudo, 'apt', 'install', '-y', 'crudini']) &&
           await exec('wsl', args: [...sudo, 'crudini', '--ini-options=nospace', '--set', '/etc/wsl.conf', 'automount', 'options', '"metadata"']) &&
+          await exec('wsl', args: [...sudo, 'crudini', '--ini-options=nospace', '--set', '/etc/wsl.conf', 'interop', 'appendWindowsPath', 'false']) &&
           await exec('wsl', args: ['--shutdown']);
 
       if (!config) {
@@ -323,18 +324,19 @@ void main(List<String> args) async {
         await exec('wsl', args: ['rm', '-r', '~/flutter']) &&
             await exec('wsl', args: ['tar', '-xvf', '~/flutter.tar.xz', '-C', '~/']) &&
             await exec('wsl', args: [...sudo, 'ln', '-s', '$homeDir/flutter/bin/flutter', '/usr/bin']) &&
+            await exec('wsl', args: [...sudo, 'ln', '-s', '$homeDir/flutter/bin/dart', '/usr/bin']) &&
             await exec('wsl', args: [...sudo, 'git', 'config', '--global', '--add', 'safe.directory', '$homeDir/flutter']);
       }
 
-      final packName = yaml['name'];
+      final name = yaml['name'] as String;
+      final packName = name.toLowerCase().replaceAll(RegExp(r'[^a-zA-Z0-9-+]'), '-');
       final root = 'build/build_script';
-      final built = await exec('wsl', args: [...sudo, 'flutter', 'clean']) &&
-          await exec('wsl', args: [...sudo, 'flutter', 'build', 'linux']) &&
-          await exec('wsl', args: [...sudo, 'mkdir', '-p', '$root/$packName/opt/bels/$packName']) &&
-          await exec('wsl', args: [...sudo, 'mkdir', '-p', '$root/$packName/DEBIAN']) &&
-          await exec('wsl', args: [...sudo, 'chmod', '755', '$root/$packName/DEBIAN']) &&
-          await exec('wsl', args: [...sudo, 'cp', '-r', 'build/linux/x64/release/bundle/*', '$root/$packName/opt/bels/$packName/']) &&
-          await exec('wsl', args: [...sudo, 'chmod', '777', '$root/$packName/opt/bels/$packName/']);
+      final built = await exec('wsl', args: [...sudo, 'flutter', 'build', 'linux']) &&
+          await exec('wsl', args: [...sudo, 'mkdir', '-p', '$root/$name/opt/bels/$name']) &&
+          await exec('wsl', args: [...sudo, 'mkdir', '-p', '$root/$name/DEBIAN']) &&
+          await exec('wsl', args: [...sudo, 'chmod', '755', '$root/$name/DEBIAN']) &&
+          await exec('wsl', args: [...sudo, 'cp', '-r', 'build/linux/x64/release/bundle/*', '$root/$name/opt/bels/$name/']) &&
+          await exec('wsl', args: [...sudo, 'chmod', '777', '$root/$name/opt/bels/$name/']);
 
       if (!built) {
         throw 'Failed to buid application';
@@ -342,10 +344,11 @@ void main(List<String> args) async {
 
       final props = {
         'PACKAGE': packName,
+        'EXENAME': name,
         'VERSION': appVersion,
       };
 
-      final control = File('./$root/$packName/DEBIAN/control');
+      final control = File('./$root/$name/DEBIAN/control');
       if (!await control.exists()) {
         await control.create();
       }
@@ -356,7 +359,7 @@ void main(List<String> args) async {
       }
       await exec('wsl', args: [...sudo, 'chmod', '555', control.path]);
 
-      final post = File('./$root/$packName/DEBIAN/postinst');
+      final post = File('./$root/$name/DEBIAN/postinst');
       if (!await post.exists()) {
         await post.create();
       }
@@ -365,11 +368,11 @@ void main(List<String> args) async {
       await exec('wsl', args: [...sudo, 'chmod', '555', post.path]);
 
       info('Packing application...');
-      await exec('wsl', args: [...sudo, 'dpkg-deb', '--build', '$root/$packName']) &&
-          await exec('wsl', args: [...sudo, 'mv', '$root/$packName.deb', output.path]) &&
+      await exec('wsl', args: [...sudo, 'dpkg-deb', '--build', '$root/$name']) &&
+          await exec('wsl', args: [...sudo, 'mv', '$root/$name.deb', output.path]) &&
           await exec(
             'rar',
-            args: ['a', '-df', '-ep1', join(output.path, 'Linux_${appName}_$appVersion.rar'), join(output.path, '$packName.deb')],
+            args: ['a', '-df', '-ep1', join(output.path, 'Linux_${appName}_$appVersion.rar'), join(output.path, '$name.deb')],
             path: r'C:\Program Files\WinRAR\',
           );
     }
