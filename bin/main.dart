@@ -328,7 +328,8 @@ void main(List<String> args) async {
 
       final packName = yaml['name'];
       final root = 'build/build_script';
-      final built = await exec('wsl', args: [...sudo, 'flutter', 'build', 'linux']) &&
+      final built = await exec('wsl', args: [...sudo, 'flutter', 'clean']) &&
+          await exec('wsl', args: [...sudo, 'flutter', 'build', 'linux']) &&
           await exec('wsl', args: [...sudo, 'mkdir', '-p', '$root/$packName/opt/bels/$packName']) &&
           await exec('wsl', args: [...sudo, 'mkdir', '-p', '$root/$packName/DEBIAN']) &&
           await exec('wsl', args: [...sudo, 'chmod', '755', '$root/$packName/DEBIAN']) &&
