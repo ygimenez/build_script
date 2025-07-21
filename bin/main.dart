@@ -323,19 +323,18 @@ void main(List<String> args) async {
         info('Extracting files...');
         await exec('wsl', args: ['rm', '-r', '~/flutter']) &&
             await exec('wsl', args: ['tar', '-xvf', '~/flutter.tar.xz', '-C', '~/']) &&
-            await exec('wsl', args: [...sudo, 'ln', '-s', '$homeDir/flutter/bin/flutter', '/usr/bin']) &&
-            await exec('wsl', args: [...sudo, 'ln', '-s', '$homeDir/flutter/bin/dart', '/usr/bin']) &&
-            await exec('wsl', args: [...sudo, 'git', 'config', '--global', '--add', 'safe.directory', '$homeDir/flutter']);
+            await exec('wsl', args: ['ln', '-s', '$homeDir/flutter/bin/flutter', '/usr/bin']) &&
+            await exec('wsl', args: ['ln', '-s', '$homeDir/flutter/bin/dart', '/usr/bin']);
       }
 
       final name = yaml['name'] as String;
       final packName = name.toLowerCase().replaceAll(RegExp(r'[^a-zA-Z0-9-+]'), '-');
       final root = 'build/build_script';
-      final built = await exec('wsl', args: [...sudo, 'flutter', 'build', 'linux']) &&
-          await exec('wsl', args: [...sudo, 'mkdir', '-p', '$root/$name/opt/bels/$name']) &&
-          await exec('wsl', args: [...sudo, 'mkdir', '-p', '$root/$name/DEBIAN']) &&
+      final built = await exec('wsl', args: ['flutter', 'build', 'linux']) &&
+          await exec('wsl', args: ['mkdir', '-p', '$root/$name/opt/bels/$name']) &&
+          await exec('wsl', args: ['mkdir', '-p', '$root/$name/DEBIAN']) &&
           await exec('wsl', args: [...sudo, 'chmod', '755', '$root/$name/DEBIAN']) &&
-          await exec('wsl', args: [...sudo, 'cp', '-r', 'build/linux/x64/release/bundle/*', '$root/$name/opt/bels/$name/']) &&
+          await exec('wsl', args: ['cp', '-r', 'build/linux/x64/release/bundle/*', '$root/$name/opt/bels/$name/']) &&
           await exec('wsl', args: [...sudo, 'chmod', '777', '$root/$name/opt/bels/$name/']);
 
       if (!built) {
@@ -360,8 +359,8 @@ void main(List<String> args) async {
       await exec('wsl', args: [...sudo, 'chmod', '555', control.path]);
 
       info('Packing application...');
-      await exec('wsl', args: [...sudo, 'dpkg-deb', '--build', '$root/$name']) &&
-          await exec('wsl', args: [...sudo, 'mv', '$root/$name.deb', output.path]) &&
+      await exec('wsl', args: ['dpkg-deb', '--build', '$root/$name']) &&
+          await exec('wsl', args: ['mv', '$root/$name.deb', output.path]) &&
           await exec(
             'rar',
             args: ['a', '-df', '-ep1', join(output.path, 'Linux_${appName}_$appVersion.rar'), join(output.path, '$name.deb')],
