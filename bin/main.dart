@@ -311,7 +311,7 @@ void main(List<String> args) async {
       while (true) {
         await exec('wsl', args: [...sudo, 'apt', 'install', '-y', ...deps, ...devDeps]);
 
-        if (await exec('wsl', args: ['flutter', '--version'], writeOutput: false)) {
+        if (await exec('wsl', args: ['$homeDir/flutter/bin/flutter', '--version'], writeOutput: false)) {
           info('OK', true);
           break;
         }
