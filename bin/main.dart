@@ -24,6 +24,15 @@ final outdated = <String>[];
 String out = '';
 
 void main(List<String> args) async {
+  final plats = <String>[];
+  final platArg = args.where((a) => a.startsWith('--platforms')).firstOrNull;
+  if (platArg != null) {
+    platArg.split('=').last.split(',').forEach((p) {
+      final plat = p.trim().toLowerCase();
+      if (plat.isNotEmpty) plats.add(plat);
+    });
+  }
+
   try {
     final isAdmin = bool.parse(
       (Process.runSync(
@@ -182,10 +191,6 @@ void main(List<String> args) async {
       }
     }
 
-    if (kIsRelease) {
-      await exec('flutter', args: ['clean']);
-    }
-
     final output = Directory('./output');
     if (!await output.exists()) {
       await output.create();
@@ -198,7 +203,7 @@ void main(List<String> args) async {
     final pubspec = File('pubspec.yaml');
     final yaml = loadYaml(await pubspec.readAsString());
 
-    if (await Directory('./windows').exists()) {
+    if ((plats.isEmpty || plats.contains('windows')) && await Directory('./windows').exists()) {
       info('--------------------- WINDOWS ---------------------');
       /* Remake Installer */
       {
@@ -242,7 +247,7 @@ void main(List<String> args) async {
           );
     }
 
-    if (await Directory('./linux').exists()) {
+    if ((plats.isEmpty || plats.contains('linux')) && await Directory('./linux').exists()) {
       info('---------------------  LINUX  ---------------------');
       await exec('wsl', args: ['--update']);
       final hasDebian = (Process.runSync('wsl', ['--list'], runInShell: true).stdout as String) //
@@ -321,8 +326,9 @@ void main(List<String> args) async {
         final homeDir = (Process.runSync('wsl', ['echo', '~'], runInShell: true).stdout as String).trim();
 
         info('Extracting files...');
-        await exec('wsl', args: ['rm', '-r', '~/flutter']) &&
-            await exec('wsl', args: ['tar', '-xvf', '~/flutter.tar.xz', '-C', '~/']) &&
+        await exec('wsl', args: ['rm', '-r', '~/flutter']);
+
+        await exec('wsl', args: ['tar', '-xvf', '~/flutter.tar.xz', '-C', '~/']) &&
             await exec('wsl', args: ['ln', '-s', '$homeDir/flutter/bin/flutter', '/usr/bin']) &&
             await exec('wsl', args: ['ln', '-s', '$homeDir/flutter/bin/dart', '/usr/bin']);
       }
@@ -368,7 +374,7 @@ void main(List<String> args) async {
           );
     }
 
-    if (await Directory('./android').exists()) {
+    if ((plats.isEmpty || plats.contains('android')) && await Directory('./android').exists()) {
       info('--------------------- ANDROID ---------------------');
 
       final built = await exec('flutter', args: ['build', 'apk']);
@@ -381,7 +387,7 @@ void main(List<String> args) async {
       }
     }
 
-    if (await Directory('./web').exists()) {
+    if ((plats.isEmpty || plats.contains('web')) && await Directory('./web').exists()) {
       info('---------------------   WEB   ---------------------');
 
       final built = await exec('flutter', args: ['build', 'web']);
