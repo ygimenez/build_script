@@ -307,11 +307,10 @@ void main(List<String> args) async {
 
       info('Verifying Flutter installation...');
 
-      final homeDir = (Process.runSync('wsl', ['echo', '~'], runInShell: true).stdout as String).trim();
       while (true) {
         await exec('wsl', args: [...sudo, 'apt', 'install', '-y', ...deps, ...devDeps]);
 
-        if (await exec('wsl', args: ['$homeDir/flutter/bin/flutter', '--version'], writeOutput: false)) {
+        if (await exec('wsl', args: ['flutter', '--version'], writeOutput: false)) {
           info('OK', true);
           break;
         }
@@ -327,13 +326,16 @@ void main(List<String> args) async {
         info('Extracting files...');
         await exec('wsl', args: ['rm', '-r', '~/flutter']);
 
-        await exec('wsl', args: ['tar', '-xvf', '~/flutter.tar.xz', '-C', '~/']);
+        final homeDir = (Process.runSync('wsl', ['echo', '~'], runInShell: true).stdout as String).trim();
+        await exec('wsl', args: ['tar', '-xvf', '~/flutter.tar.xz', '-C', '~/']) &&
+            await exec('wsl', args: [...sudo, 'ln', '-s', '$homeDir/flutter/bin/flutter', '/usr/bin']) &&
+            await exec('wsl', args: [...sudo, 'ln', '-s', '$homeDir/flutter/bin/dart', '/usr/bin']);
       }
 
       final name = yaml['name'] as String;
       final packName = name.toLowerCase().replaceAll(RegExp(r'[^a-zA-Z0-9-+]'), '-');
       final root = 'build/build_script';
-      final built = await exec('wsl', args: ['$homeDir/flutter/bin/flutter', 'build', 'linux']) &&
+      final built = await exec('wsl', args: ['flutter', 'build', 'linux']) &&
           await exec('wsl', args: ['mkdir', '-p', '$root/$name/opt/bels/$name']) &&
           await exec('wsl', args: ['mkdir', '-p', '$root/$name/DEBIAN']) &&
           await exec('wsl', args: [...sudo, 'chmod', '755', '$root/$name/DEBIAN']) &&
