@@ -13,7 +13,7 @@ const kVersion = 'DEV';
 const kRepository = 'https://github.com/ygimenez/build_script';
 const kBlobs = 'https://raw.githubusercontent.com/ygimenez/build_script/refs/heads/master';
 const kIsRelease = kVersion != 'DEV';
-const kFlutterVersion = '3.32.0';
+const kFlutterVersion = '3.38.3';
 const kFlutterRepo = 'https://storage.googleapis.com/flutter_infra_release/releases/stable';
 const kChocoInstall =
     "Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))";
