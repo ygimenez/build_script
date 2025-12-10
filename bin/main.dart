@@ -335,7 +335,8 @@ void main(List<String> args) async {
       final name = yaml['name'] as String;
       final packName = name.toLowerCase().replaceAll(RegExp(r'[^a-zA-Z0-9-+]'), '-');
       final root = 'build/build_script';
-      final built = await exec('wsl', args: ['flutter', 'build', 'linux']) &&
+      final built = await exec('wsl', args: ['flutter', 'clean']) &&
+          await exec('wsl', args: ['flutter', 'build', 'linux']) &&
           await exec('wsl', args: ['mkdir', '-p', '$root/$name/opt/bels/$name']) &&
           await exec('wsl', args: ['mkdir', '-p', '$root/$name/DEBIAN']) &&
           await exec('wsl', args: [...sudo, 'chmod', '755', '$root/$name/DEBIAN']) &&
